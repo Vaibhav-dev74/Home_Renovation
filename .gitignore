@@ -1,1 +1,22 @@
+# Environments & Secrets
 .env
+.env.*
+!.env.example
+.venv/
+venv/
+
+# ADK session databases & internal states
+.adk/
+*.db
+*.sqlite3
+*.evalset.json
+
+# Python bytecode & cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.pytest_cache/
+
+# Generated artifacts
+artifacts/

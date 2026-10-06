@@ -195,6 +195,10 @@ class CheckRenovationPermitsInput(BaseModel):
         default=False,
         description="True if adding new circuits, heavy appliance lines (240V), or sub-panels.",
     )
+    location: Optional[str] = Field(
+        default=None,
+        description="City/state or municipality (e.g. 'Austin, TX').",
+    )
 
 
 class RecommendMaterialsInput(BaseModel):
@@ -488,6 +492,8 @@ def check_renovation_permits(
     structural_changes: bool = False,
     plumbing_changes: bool = False,
     electrical_changes: bool = False,
+    location: str = None,
+    **kwargs,
 ) -> str:
     """Checks permit and building code requirements for a renovation plan.
     
@@ -497,6 +503,7 @@ def check_renovation_permits(
         structural_changes: True if moving walls, doors, or windows
         plumbing_changes: True if relocating pipes, drains, or supply lines
         electrical_changes: True if adding circuits, sub-panels, or high-draw appliances
+        location: City/state or municipality (e.g. 'Austin, TX')
         
     Returns:
         Structured guidance on required building permits, inspection milestones, and safety codes.

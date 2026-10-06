@@ -104,6 +104,14 @@ def run_diagnostics():
         print(f"  [FAIL] Core Tools Sanity Error: {e}")
         all_passed = False
 
+    # 7. Check V2 Intelligence Engines
+    try:
+        import models, database, spatial_vision, design_engine, budget_optimizer, permit_rag, boq_engine, timeline_engine, critic_engine
+        print("  [OK] V2 Intelligence Engines: Spatial, BOQ, RAG Permits, Timeline DAG, Critic & SQLite verified")
+    except Exception as e:
+        print(f"  [FAIL] V2 Engines Import Error: {e}")
+        all_passed = False
+
     print("\n------------------------------------------------------------------------")
     if all_passed:
         print(">> System Status: ALL CHECKS PASSED! The project is healthy and ready to run.")
@@ -189,12 +197,17 @@ def main():
     parser.add_argument(
         "--cli",
         action="store_true",
-        help="Run interactive terminal CLI chat session (default)",
+        help="Run interactive terminal CLI chat session",
     )
     parser.add_argument(
         "--web",
         action="store_true",
-        help="Launch the ADK Web UI in your browser",
+        help="Launch the Google ADK inspector Web UI in your browser",
+    )
+    parser.add_argument(
+        "--app",
+        action="store_true",
+        help="Launch the SaaS Renovation Intelligence Platform (default)",
     )
     parser.add_argument(
         "--port",
@@ -212,10 +225,14 @@ def main():
 
     if args.check:
         run_diagnostics()
+    elif args.cli:
+        launch_cli()
     elif args.web:
         launch_web(port=args.port)
     else:
-        launch_cli()
+        # Default: Launch modern Enterprise SaaS Web Application
+        import web_app
+        web_app.run_server(port=args.port)
 
 
 if __name__ == "__main__":

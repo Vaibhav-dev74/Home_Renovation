@@ -26,6 +26,7 @@ import permit_rag
 import boq_engine
 import timeline_engine
 import critic_engine
+import product_catalog
 from web_app import app
 
 
@@ -226,5 +227,120 @@ class TestFastAPIRestGateway(unittest.TestCase):
         self.assertIn("BILL OF QUANTITIES", boq_res.text)
 
 
+class TestProductCatalogAnd3DSpatialPlanner(unittest.TestCase):
+    """Validates real product catalog dimensions, location filtering, clearance clashes, and 3D endpoints."""
+
+    def setUp(self):
+        self.client = TestClient(app)
+
+    def test_catalog_retrieval_and_location_filtering(self):
+        # India filter
+        blr_prods = product_catalog.get_all_products(location="Bengaluru, India")
+        self.assertGreaterEqual(len(blr_prods), 8)
+        self.assertTrue(all(p.currency == models.Currency.INR or p.country == "Global" for p in blr_prods))
+
+        # US filter
+        us_prods = product_catalog.get_all_products(location="Austin, TX")
+        self.assertGreaterEqual(len(us_prods), 6)
+        self.assertTrue(all(p.currency == models.Currency.USD or p.country == "Global" for p in us_prods))
+
+        # Category filter
+        sinks = product_catalog.get_all_products(category="Sinks")
+        self.assertTrue(all("sink" in s.category.lower() for s in sinks))
+
+    def test_placed_item_preserves_physical_dimensions(self):
+        prod = product_catalog.get_product_by_id("prod-ikea-sektion-island")
+        self.assertIsNotNone(prod)
+        placed = product_catalog.create_placed_item_from_product(prod, x=1.0, z=-2.0)
+        self.assertEqual(placed.width_ft, 6.0)  # 72 inches
+        self.assertEqual(placed.depth_ft, 3.0)  # 36 inches
+        self.assertEqual(placed.height_ft, 3.0) # 36 inches
+        self.assertEqual(placed.x, 1.0)
+        self.assertEqual(placed.z, -2.0)
+
+    def test_clearance_overlap_clash_detection(self):
+        prod_island = product_catalog.get_product_by_id("prod-ikea-sektion-island")
+        prod_fridge = product_catalog.get_product_by_id("prod-samsung-french-fridge")
+
+        # Place them at same position (direct collision)
+        item1 = product_catalog.create_placed_item_from_product(prod_island, x=0.0, z=0.0)
+        item2 = product_catalog.create_placed_item_from_product(prod_fridge, x=0.0, z=0.0)
+
+        layout = models.RoomLayout3D(
+            project_id="test-clash",
+            room_width_ft=12.0,
+            room_length_ft=15.0,
+            ceiling_height_ft=9.0,
+            placed_items=[item1, item2],
+        )
+
+        is_valid, warnings = product_catalog.validate_room_layout_clearance(layout)
+        self.assertFalse(is_valid)
+        self.assertTrue(any("CLASH" in w for w in warnings))
+
+    def test_clearance_success_with_proper_spacing(self):
+        prod_island = product_catalog.get_product_by_id("prod-ikea-sektion-island")
+        prod_fridge = product_catalog.get_product_by_id("prod-samsung-french-fridge")
+
+        # Place well apart (island at center, fridge against back-left wall)
+        item1 = product_catalog.create_placed_item_from_product(prod_island, x=0.0, z=1.0)
+        item2 = product_catalog.create_placed_item_from_product(prod_fridge, x=-3.5, z=-5.0)
+
+        layout = models.RoomLayout3D(
+            project_id="test-clear",
+            room_width_ft=12.0,
+            room_length_ft=15.0,
+            ceiling_height_ft=9.0,
+            placed_items=[item1, item2],
+        )
+
+        is_valid, warnings = product_catalog.validate_room_layout_clearance(layout)
+        self.assertTrue(is_valid)
+
+    def test_3d_api_placement_and_cart_sync(self):
+        # 1. Fetch catalog
+        r_cat = self.client.get("/api/products?location=Bengaluru")
+        self.assertEqual(r_cat.status_code, 200)
+        self.assertTrue(len(r_cat.json()["products"]) > 0)
+
+        # 2. Create project
+        p_res = self.client.post("/api/projects", json={
+            "name": "3D Spatial Studio Test",
+            "room_type": "kitchen",
+            "scope": "moderate",
+            "square_footage": 180,
+            "location": "Bengaluru, India",
+            "currency": "INR",
+            "target_budget": 800000.0,
+            "style": "modern",
+        })
+        self.assertEqual(p_res.status_code, 200)
+        pid = p_res.json()["project"]["project_id"]
+
+        # 3. Retrieve initial 3D layout
+        r_lay = self.client.get(f"/api/projects/{pid}/layout3d")
+        self.assertEqual(r_lay.status_code, 200)
+        self.assertEqual(len(r_lay.json()["layout_3d"]["placed_items"]), 0)
+
+        # 4. Place IKEA island in 3D room
+        r_place = self.client.post(f"/api/projects/{pid}/layout3d/place", json={
+            "product_id": "prod-ikea-sektion-island",
+            "x": 0.0,
+            "z": 0.0,
+        })
+        self.assertEqual(r_place.status_code, 200)
+        place_data = r_place.json()
+        self.assertEqual(len(place_data["layout_3d"]["placed_items"]), 1)
+        self.assertEqual(place_data["layout_3d"]["total_products_cost"], 48500.0)
+        item_id = place_data["placed_item"]["item_id"]
+
+        # 5. Delete placed item
+        r_del = self.client.delete(f"/api/projects/{pid}/layout3d/items/{item_id}")
+        self.assertEqual(r_del.status_code, 200)
+        self.assertEqual(len(r_del.json()["layout_3d"]["placed_items"]), 0)
+        self.assertEqual(r_del.json()["layout_3d"]["total_products_cost"], 0.0)
+
+
 if __name__ == "__main__":
     unittest.main()
+

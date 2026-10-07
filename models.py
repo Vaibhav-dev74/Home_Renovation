@@ -369,3 +369,71 @@ class Project(BaseModel):
     critic_report: Optional[CriticReport] = None
     risk_report: Optional[RiskReport] = None
     quality_score: Optional[DesignQualityScore] = None
+    layout_3d: Optional["RoomLayout3D"] = None
+
+
+# ============================================================================
+# 10. Real-Time Product Catalog & 3D Spatial Layout Models
+# ============================================================================
+
+class ProductDimension(BaseModel):
+    """Real-world physical dimensions of a product."""
+    width_in: float = Field(..., description="Width in inches")
+    depth_in: float = Field(..., description="Depth / Length in inches")
+    height_in: float = Field(..., description="Height in inches")
+    width_ft: float = Field(..., description="Width converted to feet")
+    depth_ft: float = Field(..., description="Depth converted to feet")
+    height_ft: float = Field(..., description="Height converted to feet")
+
+
+class Product(BaseModel):
+    """Real product item with pricing, dimensions, and retail store location."""
+    product_id: str
+    name: str
+    category: str = Field(..., description="'Cabinetry', 'Appliance', 'Sanitaryware & Fixtures', 'Furniture', 'Lighting', 'Countertops & Surfaces'")
+    room_types: List[str] = Field(default_factory=lambda: ["kitchen", "bathroom", "living_room", "bedroom"])
+    brand_or_retailer: str = Field(..., description="e.g. 'IKEA', 'Kohler', 'Pepperfry', 'Home Depot', 'Urban Ladder', 'Livspace'")
+    location_availability: str = Field(..., description="e.g. 'Bengaluru / Online', 'Mumbai', 'Delhi NCR', 'Austin, TX', 'US Nationwide', 'India Nationwide'")
+    country: str = Field(default="India", description="'India', 'US', 'Global'")
+    price: float
+    currency: Currency = Currency.INR
+    dimensions: ProductDimension
+    material: str = "Engineered Wood"
+    color: str = "White"
+    color_hex: str = "#f8fafc"
+    product_url: Optional[str] = None
+    in_stock: bool = True
+    rating: float = 4.5
+    image_icon: str = "📦"
+
+
+class PlacedItem(BaseModel):
+    """A product placed inside the interactive 3D/VR room coordinate space."""
+    item_id: str
+    product_id: str
+    name: str
+    category: str
+    x: float = Field(..., description="X coordinate in feet relative to room center")
+    z: float = Field(..., description="Z coordinate in feet relative to room center")
+    y: float = Field(default=0.0, description="Y height above floor in feet")
+    rotation_deg: float = Field(default=0.0, description="Rotation around Y axis in degrees")
+    width_ft: float
+    depth_ft: float
+    height_ft: float
+    color_hex: str = "#3b82f6"
+    price: float
+    currency: Currency = Currency.INR
+    brand_or_retailer: str
+    location_availability: str
+
+
+class RoomLayout3D(BaseModel):
+    """Full 3D / VR Room spatial layout representation."""
+    project_id: str
+    room_width_ft: float = 12.0
+    room_length_ft: float = 15.0
+    ceiling_height_ft: float = 9.0
+    placed_items: List[PlacedItem] = Field(default_factory=list)
+    total_products_cost: float = 0.0
+    currency: Currency = Currency.INR
+    clearance_warnings: List[str] = Field(default_factory=list)

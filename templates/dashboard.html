@@ -1,0 +1,1729 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AI Home Renovation Studio - 3D Spatial Planner & Marketplace</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <!-- Three.js & OrbitControls for 3D/VR Spatial Room Studio -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+  <style>
+    :root {
+      --bg: #070b14;
+      --sidebar: #0d1322;
+      --card-bg: rgba(19, 27, 46, 0.75);
+      --card-border: rgba(255, 255, 255, 0.08);
+      --primary: #3b82f6;
+      --primary-hover: #2563eb;
+      --accent: #10b981;
+      --warning: #f59e0b;
+      --danger: #ef4444;
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+      --surface: #141e33;
+      --surface-light: #202d4a;
+      --radius: 12px;
+      --radius-sm: 8px;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      overflow-x: hidden;
+      background-image: 
+        radial-gradient(circle at 10% 10%, rgba(59, 130, 246, 0.08) 0%, transparent 40%),
+        radial-gradient(circle at 90% 90%, rgba(16, 185, 129, 0.06) 0%, transparent 45%);
+      background-attachment: fixed;
+    }
+
+    /* Top Navigation Header */
+    header {
+      backdrop-filter: blur(16px);
+      background: rgba(13, 19, 34, 0.9);
+      border-bottom: 1px solid var(--card-border);
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      padding: 0.85rem 1.75rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      font-weight: 700;
+      font-size: 1.15rem;
+      letter-spacing: -0.02em;
+    }
+    .brand-badge {
+      font-size: 0.7rem;
+      font-weight: 600;
+      background: rgba(59, 130, 246, 0.15);
+      color: #60a5fa;
+      border: 1px solid rgba(59, 130, 246, 0.3);
+      padding: 2px 8px;
+      border-radius: 9999px;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .location-pill {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-size: 0.8rem;
+      font-weight: 600;
+      background: rgba(16, 185, 129, 0.12);
+      color: #34d399;
+      border: 1px solid rgba(16, 185, 129, 0.25);
+      padding: 5px 12px;
+      border-radius: 9999px;
+    }
+
+    .btn {
+      padding: 0.55rem 1.1rem;
+      border-radius: var(--radius-sm);
+      font-weight: 600;
+      font-size: 0.85rem;
+      cursor: pointer;
+      border: none;
+      transition: all 0.2s;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+      text-decoration: none;
+    }
+    .btn-primary { background: var(--primary); color: white; }
+    .btn-primary:hover { background: var(--primary-hover); transform: translateY(-1px); }
+    .btn-secondary {
+      background: var(--surface-light);
+      color: var(--text);
+      border: 1px solid var(--card-border);
+    }
+    .btn-secondary:hover { background: rgba(255, 255, 255, 0.1); }
+    .btn-accent { background: var(--accent); color: white; }
+    .btn-accent:hover { background: #059669; }
+    .btn-danger {
+      background: rgba(239, 68, 68, 0.2);
+      color: #f87171;
+      border: 1px solid rgba(239, 68, 68, 0.4);
+    }
+    .btn-danger:hover { background: rgba(239, 68, 68, 0.4); }
+    .btn-sm { padding: 0.35rem 0.75rem; font-size: 0.78rem; }
+
+    /* Layout Frame */
+    .app-frame {
+      display: flex;
+      flex: 1;
+      height: calc(100vh - 65px);
+      overflow: hidden;
+    }
+
+    /* Sidebar Navigation */
+    .sidebar {
+      width: 250px;
+      background: var(--sidebar);
+      border-right: 1px solid var(--card-border);
+      display: flex;
+      flex-direction: column;
+      padding: 1.25rem 0.75rem;
+      gap: 0.4rem;
+      flex-shrink: 0;
+    }
+
+    .nav-label {
+      font-size: 0.7rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-muted);
+      margin: 0.75rem 0 0.35rem 0.65rem;
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      padding: 0.65rem 0.85rem;
+      border-radius: var(--radius-sm);
+      color: var(--text-muted);
+      font-size: 0.88rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .nav-item:hover { color: var(--text); background: rgba(255, 255, 255, 0.04); }
+    .nav-item.active { color: white; background: var(--primary); }
+    .nav-badge {
+      margin-left: auto;
+      font-size: 0.7rem;
+      padding: 2px 6px;
+      border-radius: 9999px;
+      background: rgba(255, 255, 255, 0.15);
+    }
+
+    /* Main Viewport */
+    .main-viewport {
+      flex: 1;
+      overflow-y: auto;
+      padding: 1.5rem;
+    }
+
+    .tab-content { display: none; }
+    .tab-content.active { display: block; animation: fadeIn 0.2s ease-in-out; }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(4px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* Top KPI Bar */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+    .kpi-card {
+      background: var(--card-bg);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius);
+      padding: 1.1rem 1.25rem;
+      position: relative;
+    }
+    .kpi-label { font-size: 0.75rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; }
+    .kpi-value { font-size: 1.65rem; font-weight: 800; margin: 0.3rem 0; letter-spacing: -0.02em; }
+    .kpi-sub { font-size: 0.75rem; color: var(--text-muted); }
+
+    /* Cards */
+    .dashboard-card {
+      background: var(--card-bg);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius);
+      padding: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+    .card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 1.25rem;
+      border-bottom: 1px solid var(--card-border);
+      padding-bottom: 0.85rem;
+    }
+    .card-title {
+      font-size: 1.1rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    /* 3D Room Studio */
+    .studio-container {
+      position: relative;
+      width: 100%;
+      height: 540px;
+      border-radius: var(--radius);
+      overflow: hidden;
+      border: 1px solid var(--card-border);
+      background: #060913;
+    }
+    #three-canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+    .studio-toolbar {
+      position: absolute;
+      top: 12px;
+      left: 12px;
+      display: flex;
+      gap: 6px;
+      z-index: 10;
+      background: rgba(13, 19, 34, 0.85);
+      backdrop-filter: blur(8px);
+      padding: 6px;
+      border-radius: 8px;
+      border: 1px solid var(--card-border);
+    }
+    .studio-btn {
+      padding: 5px 11px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      background: transparent;
+      border: 1px solid transparent;
+      color: var(--text-muted);
+      border-radius: 6px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .studio-btn.active, .studio-btn:hover {
+      color: white;
+      background: var(--surface-light);
+      border-color: var(--card-border);
+    }
+    .studio-info {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      z-index: 10;
+      background: rgba(13, 19, 34, 0.85);
+      backdrop-filter: blur(8px);
+      padding: 6px 14px;
+      border-radius: 8px;
+      border: 1px solid var(--card-border);
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: #60a5fa;
+    }
+    .studio-overlay-tip {
+      position: absolute;
+      bottom: 12px;
+      left: 12px;
+      z-index: 10;
+      background: rgba(0, 0, 0, 0.65);
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 0.72rem;
+      color: var(--text-muted);
+    }
+
+    /* Clearance Warning Banner */
+    .clearance-banner {
+      padding: 0.85rem 1.25rem;
+      border-radius: var(--radius-sm);
+      margin-top: 1rem;
+      font-size: 0.88rem;
+      display: flex;
+      align-items: flex-start;
+      gap: 0.75rem;
+    }
+    .clearance-banner.ok {
+      background: rgba(16, 185, 129, 0.12);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      color: #34d399;
+    }
+    .clearance-banner.warning {
+      background: rgba(245, 158, 11, 0.12);
+      border: 1px solid rgba(245, 158, 11, 0.3);
+      color: #fbbf24;
+    }
+
+    /* Selected Item Inspector */
+    .item-inspector {
+      background: var(--surface);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius-sm);
+      padding: 1.2rem;
+      margin-top: 1rem;
+      display: none;
+    }
+    .inspector-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.85rem;
+    }
+    .inspector-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 1rem;
+      margin-bottom: 1rem;
+      font-size: 0.85rem;
+    }
+    .inspector-controls {
+      display: flex;
+      gap: 0.5rem;
+      flex-wrap: wrap;
+    }
+
+    /* Product Marketplace */
+    .catalog-filter-bar {
+      display: flex;
+      gap: 0.75rem;
+      align-items: center;
+      flex-wrap: wrap;
+      margin-bottom: 1.25rem;
+    }
+    .category-pills {
+      display: flex;
+      gap: 0.4rem;
+      flex-wrap: wrap;
+    }
+    .cat-pill {
+      padding: 5px 12px;
+      border-radius: 9999px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      background: var(--surface);
+      border: 1px solid var(--card-border);
+      color: var(--text-muted);
+      cursor: pointer;
+    }
+    .cat-pill.active, .cat-pill:hover {
+      background: var(--primary);
+      color: white;
+      border-color: var(--primary);
+    }
+    .product-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+      gap: 1.25rem;
+    }
+    .product-card {
+      background: var(--surface);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius);
+      padding: 1.25rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: all 0.2s;
+    }
+    .product-card:hover {
+      transform: translateY(-2px);
+      border-color: rgba(59, 130, 246, 0.4);
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+    }
+    .product-icon { font-size: 2rem; margin-bottom: 0.5rem; }
+    .product-name { font-size: 0.98rem; font-weight: 700; margin-bottom: 0.25rem; line-height: 1.3; }
+    .product-retailer { font-size: 0.78rem; color: #60a5fa; font-weight: 600; margin-bottom: 0.6rem; }
+    .product-dim {
+      font-size: 0.78rem;
+      font-family: 'JetBrains Mono', monospace;
+      color: var(--text-muted);
+      background: rgba(0, 0, 0, 0.25);
+      padding: 4px 8px;
+      border-radius: 4px;
+      margin-bottom: 0.6rem;
+    }
+    .product-loc { font-size: 0.75rem; color: #34d399; margin-bottom: 0.85rem; }
+    .product-price-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-top: 1px solid var(--card-border);
+      padding-top: 0.85rem;
+      margin-top: 0.5rem;
+    }
+    .product-price { font-size: 1.2rem; font-weight: 800; color: var(--text); }
+
+    /* Tables */
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.88rem;
+    }
+    .data-table th {
+      text-align: left;
+      padding: 0.75rem 1rem;
+      background: rgba(13, 19, 34, 0.8);
+      color: var(--text-muted);
+      font-weight: 600;
+      border-bottom: 1px solid var(--card-border);
+    }
+    .data-table td {
+      padding: 0.75rem 1rem;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+      vertical-align: middle;
+    }
+
+    .badge {
+      display: inline-block;
+      font-size: 0.72rem;
+      font-weight: 600;
+      padding: 3px 8px;
+      border-radius: 9999px;
+      background: var(--surface-light);
+      color: var(--text);
+    }
+
+    /* Modal */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 0, 0, 0.75);
+      backdrop-filter: blur(8px);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+    }
+    .modal-card {
+      background: var(--sidebar);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius);
+      width: 90%;
+      max-width: 600px;
+      padding: 2rem;
+      max-height: 90vh;
+      overflow-y: auto;
+    }
+    .form-group { margin-bottom: 1rem; }
+    .form-group label {
+      display: block;
+      font-size: 0.8rem;
+      font-weight: 600;
+      color: var(--text-muted);
+      margin-bottom: 0.35rem;
+    }
+    .form-control {
+      width: 100%;
+      padding: 0.65rem 0.85rem;
+      border-radius: var(--radius-sm);
+      background: var(--surface);
+      border: 1px solid var(--card-border);
+      color: var(--text);
+      font-family: inherit;
+      font-size: 0.9rem;
+    }
+    .form-control:focus { outline: none; border-color: var(--primary); }
+
+    /* Chat Panel */
+    .chat-panel {
+      display: flex;
+      flex-direction: column;
+      height: 480px;
+    }
+    .chat-log {
+      flex: 1;
+      overflow-y: auto;
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.75rem;
+    }
+    .chat-msg {
+      max-width: 82%;
+      padding: 0.75rem 1rem;
+      border-radius: var(--radius-sm);
+      font-size: 0.88rem;
+      line-height: 1.5;
+    }
+    .chat-msg.user { align-self: flex-end; background: var(--primary); color: white; }
+    .chat-msg.assistant {
+      align-self: flex-start;
+      background: var(--surface);
+      border: 1px solid var(--card-border);
+      color: var(--text);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Navigation Header -->
+  <header>
+    <div class="brand">
+      <span style="font-size: 1.4rem;">🏠</span>
+      <span>RenovateStudio 3D</span>
+      <span class="brand-badge">Spatial VR & Live Marketplace</span>
+    </div>
+
+    <div class="header-actions">
+      <div class="location-pill" id="header-location-pill">
+        <span>📍</span>
+        <span id="header-location-text">Bengaluru, India</span>
+      </div>
+      <select id="project-selector" class="form-control" style="width: 250px;" onchange="loadSelectedProject(this.value)">
+        <option value="">Loading Projects...</option>
+      </select>
+      <button class="btn btn-primary" onclick="openNewProjectModal()">✨ New Project</button>
+    </div>
+  </header>
+
+  <!-- App Layout Frame -->
+  <div class="app-frame">
+    <!-- Streamlined 4-Pillar Sidebar -->
+    <nav class="sidebar">
+      <div class="nav-label">Core Renovation Studio</div>
+      <div class="nav-item active" onclick="switchTab('studio3d', this)">
+        <span>🎮</span>
+        <span>3D / VR Room Studio</span>
+      </div>
+      <div class="nav-item" onclick="switchTab('marketplace', this)">
+        <span>🛒</span>
+        <span>Product Marketplace</span>
+        <span class="nav-badge" id="nav-catalog-count">12</span>
+      </div>
+      <div class="nav-item" onclick="switchTab('boq-cart', this)">
+        <span>🧾</span>
+        <span>Live BOQ & Cart</span>
+        <span class="nav-badge" id="nav-cart-count">0</span>
+      </div>
+      <div class="nav-item" onclick="switchTab('ai-copilot', this)">
+        <span>🤖</span>
+        <span>AI Vision & Copilot</span>
+      </div>
+
+      <div class="nav-label" style="margin-top: 1.5rem;">Export Tools</div>
+      <button class="btn btn-secondary btn-sm" style="margin-bottom: 0.5rem;" onclick="exportBOQ('csv')">📥 Export CSV</button>
+      <button class="btn btn-secondary btn-sm" onclick="exportBOQ('html')">🖨️ Printable BOQ</button>
+    </nav>
+
+    <!-- Main Viewport -->
+    <main class="main-viewport">
+      
+      <!-- Top KPIs -->
+      <div class="kpi-grid">
+        <div class="kpi-card">
+          <div class="kpi-label">Target Budget</div>
+          <div class="kpi-value" id="kpi-budget">₹8,00,000</div>
+          <div class="kpi-sub" id="kpi-currency">INR Envelope</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Placed Products Cart</div>
+          <div class="kpi-value" id="kpi-placed-cost" style="color: #60a5fa;">₹0</div>
+          <div class="kpi-sub" id="kpi-placed-count">0 items placed in 3D</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Room Dimensions</div>
+          <div class="kpi-value" id="kpi-room-dims">12.0' × 15.0'</div>
+          <div class="kpi-sub" id="kpi-room-sqft">180 sq ft footprint</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Spatial Clearance Status</div>
+          <div class="kpi-value" id="kpi-clearance-status" style="color: #34d399; font-size: 1.35rem;">VERIFIED</div>
+          <div class="kpi-sub" id="kpi-clearance-sub">Walkways ≥ 36 inches</div>
+        </div>
+      </div>
+
+      <!-- ================================================================= -->
+      <!-- TAB 1: 3D / VR SPATIAL ROOM STUDIO -->
+      <!-- ================================================================= -->
+      <div id="tab-studio3d" class="tab-content active">
+        <div class="dashboard-card" style="padding: 1.25rem;">
+          <div class="card-header">
+            <div class="card-title">
+              <span>🎮</span>
+              <span>Interactive 3D / VR Room Planner</span>
+            </div>
+            <div style="display: flex; gap: 0.5rem;">
+              <button class="btn btn-accent btn-sm" onclick="switchTab('marketplace', document.querySelectorAll('.nav-item')[1])">
+                ➕ Add Products from Store
+              </button>
+            </div>
+          </div>
+
+          <!-- Studio 3D Canvas Box -->
+          <div class="studio-container" id="studio-box">
+            <div class="studio-toolbar">
+              <button class="studio-btn active" id="btn-view-orbit" onclick="setCameraMode('orbit')">🎮 3D Orbit View</button>
+              <button class="studio-btn" id="btn-view-plan" onclick="setCameraMode('plan')">📐 Top-Down 2D</button>
+              <button class="studio-btn" id="btn-view-vr" onclick="setCameraMode('vr')">🕶️ First-Person Walk (VR)</button>
+              <button class="studio-btn" onclick="resetStudioCamera()">🔄 Reset</button>
+            </div>
+            <div class="studio-info" id="studio-room-pill">12.0 ft W × 15.0 ft L × 9.0 ft H</div>
+            <div class="studio-overlay-tip">💡 Click any item in the room to select, rotate, or move. Drag with mouse to orbit.</div>
+            <canvas id="three-canvas"></canvas>
+          </div>
+
+          <!-- Real-Time Clearance Banner -->
+          <div id="clearance-banner" class="clearance-banner ok">
+            <span style="font-size: 1.2rem;">✅</span>
+            <div id="clearance-banner-text">
+              <strong>Spatial Clearance Verified:</strong> All placed items fit within the room boundaries and maintain standard 36-42 inch walkways.
+            </div>
+          </div>
+
+          <!-- Selected Item Inspector HUD -->
+          <div class="item-inspector" id="item-inspector">
+            <div class="inspector-header">
+              <div>
+                <span style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">SELECTED OBJECT</span>
+                <h3 id="inspector-name" style="margin-top: 2px;">IKEA SEKTION Island</h3>
+                <span id="inspector-retailer" style="color: #60a5fa; font-size: 0.8rem;">IKEA</span>
+              </div>
+              <div style="text-align: right;">
+                <div id="inspector-price" style="font-size: 1.3rem; font-weight: 800;">₹48,500</div>
+                <button class="btn btn-danger btn-sm" onclick="deleteSelectedItem()">🗑️ Remove from Room</button>
+              </div>
+            </div>
+            <div class="inspector-grid">
+              <div>
+                <span style="color: var(--text-muted);">Physical Dimensions:</span>
+                <div id="inspector-dims" style="font-weight: 600; font-family: monospace;">72" W × 36" D × 36" H (6.0 × 3.0 × 3.0 ft)</div>
+              </div>
+              <div>
+                <span style="color: var(--text-muted);">Floor Coordinates:</span>
+                <div id="inspector-pos" style="font-weight: 600; font-family: monospace;">X: 0.0 ft, Z: 0.0 ft (Rot: 0°)</div>
+              </div>
+            </div>
+            <div class="inspector-controls">
+              <span style="font-size: 0.8rem; font-weight: 600; align-self: center; margin-right: 4px;">Nudge Position:</span>
+              <button class="btn btn-secondary btn-sm" onclick="nudgeSelectedItem(-0.5, 0)">⬅️ Left (-0.5ft)</button>
+              <button class="btn btn-secondary btn-sm" onclick="nudgeSelectedItem(0.5, 0)">➡️ Right (+0.5ft)</button>
+              <button class="btn btn-secondary btn-sm" onclick="nudgeSelectedItem(0, -0.5)">⬆️ Forward (+0.5ft)</button>
+              <button class="btn btn-secondary btn-sm" onclick="nudgeSelectedItem(0, 0.5)">⬇️ Backward (-0.5ft)</button>
+              <button class="btn btn-secondary btn-sm" onclick="rotateSelectedItem(90)">↻ Rotate 90°</button>
+            </div>
+          </div>
+
+          <!-- Placed Items Chips List -->
+          <div style="margin-top: 1.25rem;">
+            <h4 style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.6rem; text-transform: uppercase;">Placed Products In Room:</h4>
+            <div id="placed-items-chips" style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+              <span style="color: var(--text-muted); font-size: 0.85rem;">No items placed yet. Click "➕ Add Products from Store" above to begin!</span>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ================================================================= -->
+      <!-- TAB 2: REAL-TIME PRODUCT MARKETPLACE -->
+      <!-- ================================================================= -->
+      <div id="tab-marketplace" class="tab-content">
+        <div class="dashboard-card">
+          <div class="card-header">
+            <div class="card-title">
+              <span>🛒</span>
+              <span>Real-Time Renovation Marketplace</span>
+            </div>
+            <div style="display: flex; align-items: center; gap: 0.6rem;">
+              <span style="font-size: 0.8rem; color: var(--text-muted);">City Availability:</span>
+              <select id="market-city-filter" class="form-control" style="width: 220px;" onchange="filterProducts()">
+                <option value="">All Locations</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Filter Toolbar -->
+          <div class="catalog-filter-bar">
+            <div class="category-pills" id="category-pills">
+              <button class="cat-pill active" onclick="setCategoryFilter('all', this)">All Categories</button>
+            </div>
+            <div style="flex: 1; min-width: 200px;">
+              <input type="text" id="market-search-input" class="form-control" placeholder="Search products, brands (e.g. IKEA, Kohler, Samsung)..." oninput="filterProducts()">
+            </div>
+          </div>
+
+          <!-- Product Grid -->
+          <div class="product-grid" id="product-grid">
+            <div style="color: var(--text-muted); padding: 2rem;">Loading live products...</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ================================================================= -->
+      <!-- TAB 3: LIVE BOQ & CART -->
+      <!-- ================================================================= -->
+      <div id="tab-boq-cart" class="tab-content">
+        <div class="dashboard-card">
+          <div class="card-header">
+            <div class="card-title">
+              <span>🧾</span>
+              <span>Live Bill of Quantities (BOQ) & Cart</span>
+            </div>
+            <div style="display: flex; gap: 0.5rem;">
+              <button class="btn btn-secondary btn-sm" onclick="exportBOQ('csv')">📥 Download CSV</button>
+              <button class="btn btn-secondary btn-sm" onclick="exportBOQ('html')">🖨️ Printable PDF</button>
+            </div>
+          </div>
+
+          <!-- Placed Items Cart Section -->
+          <h4 style="margin-bottom: 0.75rem; color: #60a5fa;">1. Placed Products & Fixtures (Direct from 3D Studio)</h4>
+          <table class="data-table" id="table-cart-items" style="margin-bottom: 2rem;">
+            <thead>
+              <tr>
+                <th>Product</th>
+                <th>Brand / Retailer</th>
+                <th>Physical Dimensions</th>
+                <th>Unit Price</th>
+                <th>Location Availability</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+
+          <!-- Architectural & Construction Materials Section -->
+          <h4 style="margin-bottom: 0.75rem; color: var(--text);">2. Architectural Renovation Materials & Contractor Labor</h4>
+          <table class="data-table" id="table-boq-arch" style="margin-bottom: 1.5rem;">
+            <thead>
+              <tr>
+                <th>Item ID</th>
+                <th>Trade Category</th>
+                <th>Scope & Material Spec</th>
+                <th>Qty</th>
+                <th>Material Rate</th>
+                <th>Labor Rate</th>
+                <th>Subtotal</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+
+          <!-- Grand Summary Card -->
+          <div style="background: rgba(13, 19, 34, 0.8); border: 1px solid var(--card-border); border-radius: 8px; padding: 1.25rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; font-size: 1.1rem; font-weight: 700;">
+              <span>GRAND TOTAL ESTIMATE (with 10% Contingency Reserve):</span>
+              <span id="boq-grand-total" style="color: #34d399; font-size: 1.4rem;">₹0</span>
+            </div>
+            <div style="display: flex; justify-content: space-between; margin-top: 0.5rem; font-size: 0.85rem; color: var(--text-muted);">
+              <span id="boq-sub-materials">Materials: ₹0</span>
+              <span id="boq-sub-labor">Labor: ₹0</span>
+              <span id="boq-sub-contingency">Contingency (10%): ₹0</span>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+      <!-- ================================================================= -->
+      <!-- TAB 4: AI VISION & COPILOT -->
+      <!-- ================================================================= -->
+      <div id="tab-ai-copilot" class="tab-content">
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
+          
+          <!-- Vision Analysis & Before/After Card -->
+          <div class="dashboard-card">
+            <div class="card-header">
+              <div class="card-title">
+                <span>📸</span>
+                <span>Room Vision & Architectural Brief</span>
+              </div>
+            </div>
+            <div style="margin-bottom: 1rem;">
+              <h4 style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.5rem;">ORIGINAL ROOM SPACE</h4>
+              <img id="img-before" src="" alt="Room Photo" style="width: 100%; max-height: 220px; object-fit: cover; border-radius: 8px; display: none;">
+              <div id="img-before-placeholder" style="background: rgba(0,0,0,0.3); border: 1px dashed var(--card-border); padding: 2rem; text-align: center; border-radius: 8px; color: var(--text-muted); font-size: 0.85rem;">
+                No room photo attached to this project.<br>Click "✨ New Project" to upload a room image for computer vision detection.
+              </div>
+            </div>
+            <div>
+              <h4 style="font-size: 0.85rem; color: #60a5fa; margin-bottom: 0.5rem;">GROUNDED RENDERING SPECIFICATION</h4>
+              <div id="render-brief-text" style="font-family: 'JetBrains Mono', monospace; font-size: 0.78rem; line-height: 1.5; background: rgba(0,0,0,0.3); padding: 1rem; border-radius: 8px; max-height: 180px; overflow-y: auto; color: #cbd5e1;">
+                Brief loading...
+              </div>
+            </div>
+          </div>
+
+          <!-- Conversational AI Copilot Card -->
+          <div class="dashboard-card chat-panel">
+            <div class="card-header">
+              <div class="card-title">
+                <span>🤖</span>
+                <span>AI Renovation Copilot</span>
+              </div>
+              <span class="badge">Gemini Powered</span>
+            </div>
+            <div class="chat-log" id="chat-box">
+              <div class="chat-msg assistant">
+                Hello! I'm your AI Renovation Architect. You can ask me questions about building materials, clearances, or give instructions like <strong>"Change cabinets to sage green"</strong> or <strong>"Suggest a kitchen island that fits"</strong>.
+              </div>
+            </div>
+            <div style="display: flex; gap: 0.5rem; padding-top: 0.75rem;">
+              <input type="text" id="chat-input" class="form-control" placeholder="Ask a question or enter a design instruction..." onkeydown="if(event.key==='Enter') sendChatMessage()">
+              <button class="btn btn-primary" onclick="sendChatMessage()">Send</button>
+            </div>
+          </div>
+
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+  <!-- New Project Modal -->
+  <div id="new-project-modal" class="modal-overlay">
+    <div class="modal-card">
+      <h3 style="margin-bottom: 1.25rem;">✨ Start New Renovation Project</h3>
+      <div class="form-group">
+        <label>Project Name</label>
+        <input type="text" id="new-name" class="form-control" value="Chef's Kitchen Renovation">
+      </div>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+        <div class="form-group">
+          <label>Room Type</label>
+          <select id="new-room" class="form-control">
+            <option value="kitchen">Kitchen</option>
+            <option value="living_room">Living Room</option>
+            <option value="bathroom">Bathroom</option>
+            <option value="master_bedroom">Master Bedroom</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Renovation Scope</label>
+          <select id="new-scope" class="form-control">
+            <option value="cosmetic">Cosmetic (Surface)</option>
+            <option value="moderate" selected>Moderate (Fixtures & Cabinets)</option>
+            <option value="full">Full (Down to Studs)</option>
+            <option value="luxury">Luxury Bespoke</option>
+          </select>
+        </div>
+      </div>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+        <div class="form-group">
+          <label>Square Footage (sq ft)</label>
+          <input type="number" id="new-sqft" class="form-control" value="180">
+        </div>
+        <div class="form-group">
+          <label>Location / City</label>
+          <select id="new-location" class="form-control">
+            <option value="Bengaluru, India" selected>Bengaluru, India</option>
+            <option value="Mumbai, India">Mumbai, India</option>
+            <option value="Delhi NCR, India">Delhi NCR, India</option>
+            <option value="Hyderabad, India">Hyderabad, India</option>
+            <option value="Pune, India">Pune, India</option>
+            <option value="Austin, TX">Austin, TX (USA)</option>
+            <option value="San Francisco, CA">San Francisco, CA (USA)</option>
+            <option value="New York, NY">New York, NY (USA)</option>
+          </select>
+        </div>
+      </div>
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+        <div class="form-group">
+          <label>Target Budget</label>
+          <input type="number" id="new-budget" class="form-control" value="800000">
+        </div>
+        <div class="form-group">
+          <label>Currency</label>
+          <select id="new-currency" class="form-control">
+            <option value="INR" selected>INR (₹)</option>
+            <option value="USD">USD ($)</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label>Aesthetic Style</label>
+        <select id="new-style" class="form-control">
+          <option value="modern" selected>Modern Clean</option>
+          <option value="contemporary_indian">Contemporary Indian</option>
+          <option value="minimalist">Minimalist</option>
+          <option value="farmhouse">Modern Farmhouse</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Room Photo (Optional for Vision Analysis)</label>
+        <input type="file" id="new-image" class="form-control" accept="image/*">
+      </div>
+      <div style="display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 1.5rem;">
+        <button class="btn btn-secondary" onclick="closeNewProjectModal()">Cancel</button>
+        <button class="btn btn-primary" id="btn-submit-project" onclick="submitNewProject()">Launch Plan</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===================================================================== -->
+  <!-- FRONTEND JAVASCRIPT & THREE.JS 3D ENGINE -->
+  <!-- ===================================================================== -->
+  <script>
+    let currentProject = null;
+    let currentLayout = null;
+    let catalogProducts = [];
+    let activeCategory = 'all';
+
+    // Three.js Scene Variables
+    let scene, camera, renderer, controls;
+    let roomMeshes = [];
+    let productMeshes = [];
+    let selectedMesh = null;
+    let cameraMode = 'orbit';
+
+    // Tab Navigation
+    function switchTab(tabId, el) {
+      document.querySelectorAll('.nav-item').forEach(i => i.classList.remove('active'));
+      if (el) el.classList.add('active');
+      document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+      const target = document.getElementById('tab-' + tabId);
+      if (target) target.classList.add('active');
+
+      if (tabId === 'studio3d' && renderer) {
+        onWindowResize();
+      }
+    }
+
+    function openNewProjectModal() { document.getElementById('new-project-modal').style.display = 'flex'; }
+    function closeNewProjectModal() { document.getElementById('new-project-modal').style.display = 'none'; }
+
+    // Initial Load & Project Synchronization
+    window.addEventListener('DOMContentLoaded', async () => {
+      initThreeJS();
+      await loadProjectList();
+      await loadProductCatalog();
+    });
+
+    async function loadProjectList() {
+      try {
+        const res = await fetch('/api/projects');
+        const data = await res.json();
+        const sel = document.getElementById('project-selector');
+        sel.innerHTML = '';
+        if (data.projects && data.projects.length > 0) {
+          data.projects.forEach(p => {
+            const opt = document.createElement('option');
+            opt.value = p.project_id;
+            opt.innerText = `${p.name} (${p.location}) [v${p.current_version}]`;
+            sel.appendChild(opt);
+          });
+          sel.value = data.projects[0].project_id;
+          await loadSelectedProject(data.projects[0].project_id);
+        }
+      } catch (err) {
+        console.error("Failed to load projects", err);
+      }
+    }
+
+    async function loadSelectedProject(projectId) {
+      if (!projectId) return;
+      try {
+        const res = await fetch(`/api/projects/${projectId}`);
+        const data = await res.json();
+        if (data.success && data.project) {
+          currentProject = data.project;
+          await loadProjectLayout(projectId);
+          renderProjectUI(currentProject);
+        }
+      } catch (err) {
+        console.error("Error loading project", err);
+      }
+    }
+
+    async function loadProjectLayout(projectId) {
+      try {
+        const res = await fetch(`/api/projects/${projectId}/layout3d`);
+        const data = await res.json();
+        if (data.success && data.layout_3d) {
+          currentLayout = data.layout_3d;
+          render3DRoom(currentLayout);
+          renderClearanceBanner(currentLayout.clearance_warnings || []);
+          renderPlacedItemsChips(currentLayout.placed_items || []);
+          updateCartTable(currentLayout.placed_items || []);
+        }
+      } catch (err) {
+        console.error("Error loading 3D layout", err);
+      }
+    }
+
+    // Three.js 3D Spatial Room Studio Engine
+    function initThreeJS() {
+      const container = document.getElementById('studio-box');
+      const canvas = document.getElementById('three-canvas');
+      const width = container.clientWidth;
+      const height = container.clientHeight;
+
+      scene = new THREE.Scene();
+      scene.background = new THREE.Color(0x070b14);
+
+      camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000);
+      camera.position.set(0, 18, 22);
+
+      renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true });
+      renderer.setSize(width, height);
+      renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+      renderer.shadowMap.enabled = true;
+
+      controls = new THREE.OrbitControls(camera, renderer.domElement);
+      controls.enableDamping = true;
+      controls.dampingFactor = 0.05;
+      controls.maxPolarAngle = Math.PI / 2 - 0.05;
+      controls.target.set(0, 0, 0);
+
+      const ambientLight = new THREE.AmbientLight(0xffffff, 0.75);
+      scene.add(ambientLight);
+
+      const dirLight = new THREE.DirectionalLight(0xffffff, 0.85);
+      dirLight.position.set(15, 25, 15);
+      dirLight.castShadow = true;
+      scene.add(dirLight);
+
+      const bluePoint = new THREE.PointLight(0x3b82f6, 0.6, 40);
+      bluePoint.position.set(0, 8, 0);
+      scene.add(bluePoint);
+
+      const raycaster = new THREE.Raycaster();
+      const mouse = new THREE.Vector2();
+
+      canvas.addEventListener('click', (event) => {
+        const rect = canvas.getBoundingClientRect();
+        mouse.x = ((event.clientX - rect.left) / canvas.clientWidth) * 2 - 1;
+        mouse.y = -((event.clientY - rect.top) / canvas.clientHeight) * 2 + 1;
+
+        raycaster.setFromCamera(mouse, camera);
+        const intersects = raycaster.intersectObjects(productMeshes, false);
+
+        if (intersects.length > 0) {
+          selectItemByMesh(intersects[0].object);
+        } else {
+          deselectItem();
+        }
+      });
+
+      window.addEventListener('resize', onWindowResize);
+
+      function animate() {
+        requestAnimationFrame(animate);
+        controls.update();
+        renderer.render(scene, camera);
+      }
+      animate();
+    }
+
+    function onWindowResize() {
+      const container = document.getElementById('studio-box');
+      if (!container || !renderer) return;
+      const width = container.clientWidth;
+      const height = container.clientHeight;
+      camera.aspect = width / height;
+      camera.updateProjectionMatrix();
+      renderer.setSize(width, height);
+    }
+
+    function render3DRoom(layout) {
+      if (!scene || !layout) return;
+
+      roomMeshes.forEach(m => scene.remove(m));
+      productMeshes.forEach(m => scene.remove(m));
+      roomMeshes = [];
+      productMeshes = [];
+      selectedMesh = null;
+      document.getElementById('item-inspector').style.display = 'none';
+
+      const w = layout.room_width_ft || 12.0;
+      const l = layout.room_length_ft || 15.0;
+      const h = layout.ceiling_height_ft || 9.0;
+
+      document.getElementById('studio-room-pill').innerText = `${w} ft W × ${l} ft L × ${h} ft H`;
+      document.getElementById('kpi-room-dims').innerText = `${w}' × ${l}'`;
+      document.getElementById('kpi-room-sqft').innerText = `${Math.round(w * l)} sq ft footprint`;
+
+      // Floor
+      const floorGeo = new THREE.PlaneGeometry(w, l);
+      const floorMat = new THREE.MeshStandardMaterial({
+        color: 0x141e33,
+        roughness: 0.8,
+        metalness: 0.1,
+      });
+      const floor = new THREE.Mesh(floorGeo, floorMat);
+      floor.rotation.x = -Math.PI / 2;
+      floor.receiveShadow = true;
+      scene.add(floor);
+      roomMeshes.push(floor);
+
+      // Grid helper (1 unit = 1 foot)
+      const grid = new THREE.GridHelper(Math.max(w, l), Math.max(w, l), 0x3b82f6, 0x24324f);
+      grid.position.y = 0.01;
+      scene.add(grid);
+      roomMeshes.push(grid);
+
+      // Semi-transparent walls
+      const wallMat = new THREE.MeshStandardMaterial({
+        color: 0x1e293b,
+        transparent: true,
+        opacity: 0.25,
+        side: THREE.DoubleSide,
+      });
+
+      const backWall = new THREE.Mesh(new THREE.PlaneGeometry(w, h), wallMat);
+      backWall.position.set(0, h / 2, -l / 2);
+      scene.add(backWall);
+      roomMeshes.push(backWall);
+
+      const leftWall = new THREE.Mesh(new THREE.PlaneGeometry(l, h), wallMat);
+      leftWall.rotation.y = Math.PI / 2;
+      leftWall.position.set(-w / 2, h / 2, 0);
+      scene.add(leftWall);
+      roomMeshes.push(leftWall);
+
+      const rightWall = new THREE.Mesh(new THREE.PlaneGeometry(l, h), wallMat);
+      rightWall.rotation.y = -Math.PI / 2;
+      rightWall.position.set(w / 2, h / 2, 0);
+      scene.add(rightWall);
+      roomMeshes.push(rightWall);
+
+      // Blueprint Wireframe
+      const wireBox = new THREE.LineSegments(
+        new THREE.EdgesGeometry(new THREE.BoxGeometry(w, h, l)),
+        new THREE.LineBasicMaterial({ color: 0x3b82f6, transparent: true, opacity: 0.4 })
+      );
+      wireBox.position.set(0, h / 2, 0);
+      scene.add(wireBox);
+      roomMeshes.push(wireBox);
+
+      // Placed Products
+      (layout.placed_items || []).forEach(it => {
+        const pGeo = new THREE.BoxGeometry(it.width_ft, it.height_ft, it.depth_ft);
+        let color = it.color_hex || "#3b82f6";
+        const cat = (it.category || "").toLowerCase();
+        if (cat.includes("cabinet") || cat.includes("island")) color = "#2563eb";
+        else if (cat.includes("appliance")) color = "#64748b";
+        else if (cat.includes("sink") || cat.includes("bath") || cat.includes("vanity")) color = "#0ea5e9";
+        else if (cat.includes("sofa") || cat.includes("seat")) color = "#8b5cf6";
+        else if (cat.includes("dining") || cat.includes("table")) color = "#d97706";
+        else if (cat.includes("light")) color = "#eab308";
+
+        const pMat = new THREE.MeshStandardMaterial({
+          color: color,
+          roughness: 0.5,
+          metalness: 0.2,
+        });
+        const pMesh = new THREE.Mesh(pGeo, pMat);
+        pMesh.position.set(it.x, it.height_ft / 2, it.z);
+        pMesh.rotation.y = (it.rotation_deg * Math.PI) / 180.0;
+        pMesh.castShadow = true;
+        pMesh.receiveShadow = true;
+
+        const pEdges = new THREE.LineSegments(
+          new THREE.EdgesGeometry(pGeo),
+          new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.5 })
+        );
+        pMesh.add(pEdges);
+        pMesh.userData = it;
+
+        scene.add(pMesh);
+        productMeshes.push(pMesh);
+      });
+    }
+
+    function setCameraMode(mode) {
+      cameraMode = mode;
+      document.querySelectorAll('.studio-btn').forEach(b => b.classList.remove('active'));
+
+      if (mode === 'orbit') {
+        document.getElementById('btn-view-orbit').classList.add('active');
+        camera.position.set(0, 18, 22);
+        controls.target.set(0, 0, 0);
+      } else if (mode === 'plan') {
+        document.getElementById('btn-view-plan').classList.add('active');
+        camera.position.set(0, 26, 0.001);
+        controls.target.set(0, 0, 0);
+      } else if (mode === 'vr') {
+        document.getElementById('btn-view-vr').classList.add('active');
+        camera.position.set(0, 5.5, (currentLayout ? currentLayout.room_length_ft / 3 : 4));
+        controls.target.set(0, 5.0, 0);
+      }
+      controls.update();
+    }
+
+    function resetStudioCamera() {
+      setCameraMode('orbit');
+    }
+
+    function selectItemByMesh(mesh) {
+      if (selectedMesh && selectedMesh.material) {
+        selectedMesh.material.emissive = new THREE.Color(0x000000);
+      }
+      selectedMesh = mesh;
+      if (selectedMesh && selectedMesh.material) {
+        selectedMesh.material.emissive = new THREE.Color(0x224488);
+      }
+
+      const it = mesh.userData;
+      const sym = (currentProject && currentProject.currency === "USD") ? "$" : "₹";
+      const inspector = document.getElementById('item-inspector');
+      inspector.style.display = 'block';
+
+      document.getElementById('inspector-name').innerText = it.name;
+      document.getElementById('inspector-retailer').innerText = `${it.brand_or_retailer} • ${it.location_availability}`;
+      document.getElementById('inspector-price').innerText = `${sym}${it.price.toLocaleString()}`;
+      document.getElementById('inspector-dims').innerText = `${Math.round(it.width_ft*12)}" W × ${Math.round(it.depth_ft*12)}" D × ${Math.round(it.height_ft*12)}" H (${it.width_ft} × ${it.depth_ft} × ${it.height_ft} ft)`;
+      document.getElementById('inspector-pos').innerText = `X: ${it.x.toFixed(1)} ft, Z: ${it.z.toFixed(1)} ft (Rot: ${it.rotation_deg}°)`;
+    }
+
+    function deselectItem() {
+      if (selectedMesh && selectedMesh.material) {
+        selectedMesh.material.emissive = new THREE.Color(0x000000);
+      }
+      selectedMesh = null;
+      document.getElementById('item-inspector').style.display = 'none';
+    }
+
+    async function nudgeSelectedItem(dx, dz) {
+      if (!selectedMesh || !currentProject || !currentLayout) return;
+      const it = selectedMesh.userData;
+      it.x = Math.round((it.x + dx) * 10) / 10;
+      it.z = Math.round((it.z + dz) * 10) / 10;
+
+      selectedMesh.position.x = it.x;
+      selectedMesh.position.z = it.z;
+      document.getElementById('inspector-pos').innerText = `X: ${it.x.toFixed(1)} ft, Z: ${it.z.toFixed(1)} ft (Rot: ${it.rotation_deg}°)`;
+
+      await syncLayoutToServer();
+    }
+
+    async function rotateSelectedItem(deg) {
+      if (!selectedMesh || !currentProject || !currentLayout) return;
+      const it = selectedMesh.userData;
+      it.rotation_deg = (it.rotation_deg + deg) % 360;
+      selectedMesh.rotation.y = (it.rotation_deg * Math.PI) / 180.0;
+      document.getElementById('inspector-pos').innerText = `X: ${it.x.toFixed(1)} ft, Z: ${it.z.toFixed(1)} ft (Rot: ${it.rotation_deg}°)`;
+
+      await syncLayoutToServer();
+    }
+
+    async function deleteSelectedItem() {
+      if (!selectedMesh || !currentProject) return;
+      const it = selectedMesh.userData;
+      try {
+        const res = await fetch(`/api/projects/${currentProject.project_id}/layout3d/items/${it.item_id}`, {
+          method: 'DELETE'
+        });
+        const data = await res.json();
+        if (data.success) {
+          currentLayout = data.layout_3d;
+          render3DRoom(currentLayout);
+          renderClearanceBanner(currentLayout.clearance_warnings || []);
+          renderPlacedItemsChips(currentLayout.placed_items || []);
+          updateCartTable(currentLayout.placed_items || []);
+          if (data.boq) {
+            currentProject.boq = data.boq;
+            renderBOQSummary(currentProject.boq);
+          }
+        }
+      } catch (err) {
+        console.error("Error deleting item", err);
+      }
+    }
+
+    async function syncLayoutToServer() {
+      if (!currentProject || !currentLayout) return;
+      try {
+        const res = await fetch(`/api/projects/${currentProject.project_id}/layout3d`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(currentLayout)
+        });
+        const data = await res.json();
+        if (data.success) {
+          currentLayout = data.layout_3d;
+          renderClearanceBanner(currentLayout.clearance_warnings || []);
+          if (data.boq) {
+            currentProject.boq = data.boq;
+            renderBOQSummary(currentProject.boq);
+          }
+        }
+      } catch (err) {
+        console.error("Error syncing layout", err);
+      }
+    }
+
+    function renderClearanceBanner(warnings) {
+      const banner = document.getElementById('clearance-banner');
+      const text = document.getElementById('clearance-banner-text');
+      const kpiStatus = document.getElementById('kpi-clearance-status');
+      const kpiSub = document.getElementById('kpi-clearance-sub');
+
+      if (!warnings || warnings.length === 0) {
+        banner.className = "clearance-banner ok";
+        text.innerHTML = `<strong>Spatial Clearance Verified:</strong> All placed items fit within the room and maintain standard 36-42 inch walkways.`;
+        kpiStatus.innerText = "VERIFIED";
+        kpiStatus.style.color = "#34d399";
+        kpiSub.innerText = "Walkways ≥ 36 inches";
+      } else {
+        banner.className = "clearance-banner warning";
+        let html = `<strong>Spatial Clearance Warning (${warnings.length} issue${warnings.length>1?'s':''}):</strong><ul style="margin-top:4px; padding-left:1.2rem;">`;
+        warnings.forEach(w => { html += `<li>${w}</li>`; });
+        html += `</ul>`;
+        text.innerHTML = html;
+
+        kpiStatus.innerText = "WARNING";
+        kpiStatus.style.color = "#fbbf24";
+        kpiSub.innerText = `${warnings.length} clearance conflict(s)`;
+      }
+    }
+
+    function renderPlacedItemsChips(items) {
+      const container = document.getElementById('placed-items-chips');
+      const navBadge = document.getElementById('nav-cart-count');
+      const kpiPlacedCost = document.getElementById('kpi-placed-cost');
+      const kpiPlacedCount = document.getElementById('kpi-placed-count');
+
+      const sym = (currentProject && currentProject.currency === "USD") ? "$" : "₹";
+      const totalCost = items.reduce((sum, it) => sum + (it.price || 0), 0);
+
+      navBadge.innerText = items.length;
+      kpiPlacedCost.innerText = `${sym}${totalCost.toLocaleString()}`;
+      kpiPlacedCount.innerText = `${items.length} item${items.length===1?'':'s'} placed in 3D`;
+
+      if (items.length === 0) {
+        container.innerHTML = `<span style="color:var(--text-muted); font-size:0.85rem;">No items placed yet. Click "➕ Add Products from Store" above to begin!</span>`;
+        return;
+      }
+
+      container.innerHTML = '';
+      items.forEach(it => {
+        const chip = document.createElement('div');
+        chip.style.cssText = "background:var(--surface); border:1px solid var(--card-border); padding:6px 12px; border-radius:6px; font-size:0.8rem; display:flex; align-items:center; gap:8px; cursor:pointer;";
+        chip.innerHTML = `<strong>${it.name}</strong> <span style="color:#60a5fa;">(${sym}${it.price.toLocaleString()})</span>`;
+        chip.onclick = () => {
+          const mesh = productMeshes.find(m => m.userData.item_id === it.item_id);
+          if (mesh) selectItemByMesh(mesh);
+        };
+        container.appendChild(chip);
+      });
+    }
+
+    // Product Marketplace
+    async function loadProductCatalog() {
+      try {
+        const loc = currentProject ? currentProject.location : '';
+        const res = await fetch(`/api/products?location=${encodeURIComponent(loc)}`);
+        const data = await res.json();
+        if (data.success) {
+          catalogProducts = data.products || [];
+          document.getElementById('nav-catalog-count').innerText = catalogProducts.length;
+
+          const citySel = document.getElementById('market-city-filter');
+          citySel.innerHTML = '<option value="">All Locations</option>';
+          (data.available_locations || []).forEach(loc => {
+            const opt = document.createElement('option');
+            opt.value = loc.name;
+            opt.innerText = loc.name;
+            if (currentProject && currentProject.location.toLowerCase().includes(loc.id)) {
+              opt.selected = true;
+            }
+            citySel.appendChild(opt);
+          });
+
+          const catPills = document.getElementById('category-pills');
+          catPills.innerHTML = '<button class="cat-pill active" onclick="setCategoryFilter(\'all\', this)">All Categories</button>';
+          (data.available_categories || []).forEach(cat => {
+            catPills.innerHTML += `<button class="cat-pill" onclick="setCategoryFilter('${cat}', this)">${cat}</button>`;
+          });
+
+          renderProductsGrid(catalogProducts);
+        }
+      } catch (err) {
+        console.error("Error loading catalog", err);
+      }
+    }
+
+    function setCategoryFilter(cat, btn) {
+      activeCategory = cat;
+      document.querySelectorAll('.cat-pill').forEach(b => b.classList.remove('active'));
+      if (btn) btn.classList.add('active');
+      filterProducts();
+    }
+
+    async function filterProducts() {
+      const city = document.getElementById('market-city-filter').value;
+      const search = document.getElementById('market-search-input').value.trim();
+
+      const params = new URLSearchParams();
+      if (activeCategory && activeCategory !== 'all') params.append('category', activeCategory);
+      if (city) params.append('location', city);
+      if (search) params.append('search', search);
+
+      try {
+        const res = await fetch(`/api/products?${params.toString()}`);
+        const data = await res.json();
+        if (data.success) {
+          renderProductsGrid(data.products || []);
+        }
+      } catch (err) {
+        console.error("Error filtering products", err);
+      }
+    }
+
+    function renderProductsGrid(products) {
+      const grid = document.getElementById('product-grid');
+      if (!products || products.length === 0) {
+        grid.innerHTML = `<div style="grid-column: 1/-1; padding: 2rem; text-align: center; color: var(--text-muted);">
+          No products found matching your current filter. Try selecting "All Locations" or removing keywords.
+        </div>`;
+        return;
+      }
+
+      grid.innerHTML = '';
+      products.forEach(p => {
+        const sym = p.currency === "USD" ? "$" : "₹";
+        const wIn = p.dimensions.width_in;
+        const dIn = p.dimensions.depth_in;
+        const hIn = p.dimensions.height_in;
+        const wFt = p.dimensions.width_ft;
+        const dFt = p.dimensions.depth_ft;
+        const hFt = p.dimensions.height_ft;
+
+        const card = document.createElement('div');
+        card.className = 'product-card';
+        card.innerHTML = `
+          <div>
+            <div class="product-icon">${p.image_icon || '📦'}</div>
+            <div class="product-name">${p.name}</div>
+            <div class="product-retailer">${p.brand_or_retailer} • ${p.category}</div>
+            <div class="product-dim">📐 ${wIn}" W × ${dIn}" D × ${hIn}" H<br><span style="color:#60a5fa;">(${wFt} × ${dFt} × ${hFt} ft)</span></div>
+            <div class="product-loc">📍 ${p.location_availability}</div>
+          </div>
+          <div class="product-price-row">
+            <div class="product-price">${sym}${p.price.toLocaleString()}</div>
+            <button class="btn btn-primary btn-sm" onclick="placeProductInRoom('${p.product_id}')">
+              ➕ Place in 3D
+            </button>
+          </div>
+        `;
+        grid.appendChild(card);
+      });
+    }
+
+    async function placeProductInRoom(productId) {
+      if (!currentProject) {
+        alert("Please select or start a project first.");
+        return;
+      }
+
+      try {
+        const res = await fetch(`/api/projects/${currentProject.project_id}/layout3d/place`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ product_id: productId, x: 0.0, z: 0.0 })
+        });
+        const data = await res.json();
+        if (data.success) {
+          currentLayout = data.layout_3d;
+          render3DRoom(currentLayout);
+          renderClearanceBanner(currentLayout.clearance_warnings || []);
+          renderPlacedItemsChips(currentLayout.placed_items || []);
+          updateCartTable(currentLayout.placed_items || []);
+          if (data.boq) {
+            currentProject.boq = data.boq;
+            renderBOQSummary(currentProject.boq);
+          }
+          switchTab('studio3d', document.querySelectorAll('.nav-item')[0]);
+        } else {
+          alert("Error placing product: " + (data.error || "Unknown"));
+        }
+      } catch (err) {
+        alert("Failed to place product: " + err);
+      }
+    }
+
+    // BOQ & Cart Renderers
+    function updateCartTable(placedItems) {
+      const tbody = document.querySelector('#table-cart-items tbody');
+      if (!tbody) return;
+      tbody.innerHTML = '';
+      const sym = (currentProject && currentProject.currency === "USD") ? "$" : "₹";
+
+      if (!placedItems || placedItems.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:var(--text-muted); padding:1.5rem;">No products placed in the room yet. Browse the Marketplace to add items!</td></tr>`;
+        return;
+      }
+
+      placedItems.forEach(it => {
+        tbody.innerHTML += `<tr>
+          <td><strong>${it.name}</strong></td>
+          <td>${it.brand_or_retailer}</td>
+          <td style="font-family:monospace;">${Math.round(it.width_ft*12)}"W × ${Math.round(it.depth_ft*12)}"D × ${Math.round(it.height_ft*12)}"H</td>
+          <td style="font-weight:700;">${sym}${it.price.toLocaleString()}</td>
+          <td style="color:#34d399; font-size:0.8rem;">${it.location_availability}</td>
+          <td>
+            <button class="btn btn-danger btn-sm" onclick="deletePlacedItemById('${it.item_id}')">🗑️ Remove</button>
+          </td>
+        </tr>`;
+      });
+    }
+
+    async function deletePlacedItemById(itemId) {
+      if (!currentProject) return;
+      try {
+        const res = await fetch(`/api/projects/${currentProject.project_id}/layout3d/items/${itemId}`, {
+          method: 'DELETE'
+        });
+        const data = await res.json();
+        if (data.success) {
+          currentLayout = data.layout_3d;
+          render3DRoom(currentLayout);
+          renderClearanceBanner(currentLayout.clearance_warnings || []);
+          renderPlacedItemsChips(currentLayout.placed_items || []);
+          updateCartTable(currentLayout.placed_items || []);
+          if (data.boq) {
+            currentProject.boq = data.boq;
+            renderBOQSummary(currentProject.boq);
+          }
+        }
+      } catch (err) {
+        console.error("Error removing item", err);
+      }
+    }
+
+    function renderBOQSummary(boq) {
+      if (!boq) return;
+      const sym = (currentProject && currentProject.currency === "USD") ? "$" : "₹";
+
+      document.getElementById('boq-grand-total').innerText = `${sym}${boq.grand_total.toLocaleString()}`;
+      document.getElementById('boq-sub-materials').innerText = `Materials: ${sym}${boq.subtotal_materials.toLocaleString()}`;
+      document.getElementById('boq-sub-labor').innerText = `Labor: ${sym}${boq.subtotal_labor.toLocaleString()}`;
+      document.getElementById('boq-sub-contingency').innerText = `Contingency (10%): ${sym}${boq.contingency_amount.toLocaleString()}`;
+
+      const tbody = document.querySelector('#table-boq-arch tbody');
+      if (!tbody) return;
+      tbody.innerHTML = '';
+
+      const archItems = (boq.items || []).filter(i => i.category !== "Placed Products & Fixtures");
+      archItems.forEach(i => {
+        tbody.innerHTML += `<tr>
+          <td style="font-family:monospace;">${i.item_id}</td>
+          <td><strong>${i.category}</strong></td>
+          <td>${i.item_name}<br><span style="font-size:0.75rem; color:var(--text-muted);">${i.description}</span></td>
+          <td>${i.quantity} ${i.unit}</td>
+          <td>${sym}${i.material_unit_rate.toLocaleString()}</td>
+          <td>${sym}${i.labor_unit_rate.toLocaleString()}</td>
+          <td style="font-weight:700;">${sym}${i.total_amount.toLocaleString()}</td>
+        </tr>`;
+      });
+    }
+
+    function renderProjectUI(p) {
+      const sym = p.currency === "USD" ? "$" : "₹";
+
+      document.getElementById('kpi-budget').innerText = `${sym}${p.target_budget.toLocaleString()}`;
+      document.getElementById('kpi-currency').innerText = `${p.currency} Envelope`;
+      document.getElementById('header-location-text').innerText = p.location;
+
+      if (p.original_image_path) {
+        const img = document.getElementById('img-before');
+        img.src = p.original_image_path;
+        img.style.display = 'block';
+        document.getElementById('img-before-placeholder').style.display = 'none';
+      }
+
+      if (p.current_design) {
+        document.getElementById('render-brief-text').innerText = 
+          `STYLE: ${p.style.toUpperCase()} ${p.room_type.toUpperCase()}\n` +
+          `Cabinetry: ${p.current_design.cabinet_color} (${p.current_design.cabinet_style})\n` +
+          `Countertop: ${p.current_design.countertop_material} (${p.current_design.countertop_finish})\n` +
+          `Flooring: ${p.current_design.flooring_type} (${p.current_design.flooring_finish})\n` +
+          `Wall Paint: ${p.current_design.wall_paint}\n` +
+          `Lighting: ${p.current_design.lighting_types.join(', ')}`;
+      }
+
+      if (p.boq) {
+        renderBOQSummary(p.boq);
+      }
+    }
+
+    // Submit New Project
+    async function submitNewProject() {
+      const btn = document.getElementById('btn-submit-project');
+      btn.innerText = "Analyzing & Synthesizing Plan...";
+      btn.disabled = true;
+
+      const payload = {
+        name: document.getElementById('new-name').value,
+        room_type: document.getElementById('new-room').value,
+        scope: document.getElementById('new-scope').value,
+        square_footage: parseInt(document.getElementById('new-sqft').value),
+        location: document.getElementById('new-location').value,
+        target_budget: parseFloat(document.getElementById('new-budget').value),
+        currency: document.getElementById('new-currency').value,
+        style: document.getElementById('new-style').value,
+      };
+
+      const fileInput = document.getElementById('new-image');
+      if (fileInput.files.length > 0) {
+        const reader = new FileReader();
+        reader.onload = async function() {
+          payload.image_data = reader.result;
+          await executeCreateProject(payload);
+        };
+        reader.readAsDataURL(fileInput.files[0]);
+      } else {
+        await executeCreateProject(payload);
+      }
+    }
+
+    async function executeCreateProject(payload) {
+      try {
+        const res = await fetch('/api/projects', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(payload)
+        });
+        const data = await res.json();
+        if (data.success && data.project) {
+          closeNewProjectModal();
+          await loadProjectList();
+          await loadSelectedProject(data.project.project_id);
+          document.getElementById('project-selector').value = data.project.project_id;
+        } else {
+          alert("Error creating project: " + (data.error || "Unknown"));
+        }
+      } catch (err) {
+        alert("Failed to create project: " + err);
+      } finally {
+        const btn = document.getElementById('btn-submit-project');
+        btn.innerText = "Launch Plan";
+        btn.disabled = false;
+      }
+    }
+
+    function exportBOQ(format) {
+      if (!currentProject) return;
+      window.open(`/api/projects/${currentProject.project_id}/export-boq?format=${format}`, '_blank');
+    }
+
+    // Chat Copilot
+    async function sendChatMessage() {
+      if (!currentProject) {
+        alert("Please select or start a project first.");
+        return;
+      }
+      const inp = document.getElementById('chat-input');
+      const msg = inp.value.trim();
+      if (!msg) return;
+
+      const chatBox = document.getElementById('chat-box');
+      chatBox.innerHTML += `<div class="chat-msg user">${msg}</div>`;
+      inp.value = '';
+      chatBox.scrollTop = chatBox.scrollHeight;
+
+      const lower = msg.toLowerCase();
+      const isEdit = lower.startsWith("make") || lower.startsWith("change") || lower.startsWith("switch") || lower.startsWith("replace") || lower.includes("cabinet") || lower.includes("countertop") || lower.includes("flooring") || lower.includes("paint");
+
+      if (isEdit) {
+        try {
+          const res = await fetch(`/api/projects/${currentProject.project_id}/edit`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ instruction: msg })
+          });
+          const data = await res.json();
+          if (data.success) {
+            chatBox.innerHTML += `<div class="chat-msg assistant">✨ <strong>Design Updated (Version ${data.version.version_id}):</strong><br>${data.designer_rationale}</div>`;
+            currentProject = data.project;
+            renderProjectUI(currentProject);
+          } else {
+            chatBox.innerHTML += `<div class="chat-msg assistant" style="color:#ef4444;">Error applying edit: ${data.error}</div>`;
+          }
+        } catch (err) {
+          chatBox.innerHTML += `<div class="chat-msg assistant" style="color:#ef4444;">Network error: ${err}</div>`;
+        }
+      } else {
+        try {
+          const res = await fetch(`/api/projects/${currentProject.project_id}/chat`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ message: msg })
+          });
+          const data = await res.json();
+          chatBox.innerHTML += `<div class="chat-msg assistant">${data.reply || data.error}</div>`;
+        } catch (err) {
+          chatBox.innerHTML += `<div class="chat-msg assistant" style="color:#ef4444;">Network error: ${err}</div>`;
+        }
+      }
+      chatBox.scrollTop = chatBox.scrollHeight;
+    }
+  </script>
+</body>
+</html>

@@ -26,6 +26,10 @@ from models import (
     FactSource,
     DesignVersion,
     DesignState,
+    RoomLayout3D,
+    PlacedItem,
+    Product,
+    BOQItem,
 )
 import spatial_vision
 import design_engine
@@ -34,6 +38,7 @@ import permit_rag
 import boq_engine
 import timeline_engine
 import critic_engine
+import product_catalog
 
 # Load environment
 load_dotenv()
@@ -209,6 +214,30 @@ async def create_project_endpoint(request: Request):
             room_type=room_type,
         )
 
+        # 9. Spatial 3D Room Studio Setup
+        import math
+        room_w = 12.0
+        room_l = 15.0
+        ceiling_h = 9.0
+        if spatial_model and spatial_model.dimensions:
+            room_w = spatial_model.dimensions.width_ft or 12.0
+            room_l = spatial_model.dimensions.length_ft or 15.0
+            ceiling_h = spatial_model.dimensions.height_ft or 9.0
+        elif sqft > 0:
+            room_l = round(math.sqrt(sqft * 1.25), 1)
+            room_w = round(sqft / room_l, 1)
+
+        layout_3d = RoomLayout3D(
+            project_id=project_id,
+            room_width_ft=room_w,
+            room_length_ft=room_l,
+            ceiling_height_ft=ceiling_h,
+            placed_items=[],
+            total_products_cost=0.0,
+            currency=currency,
+            clearance_warnings=[],
+        )
+
         # Build Project object
         project = Project(
             project_id=project_id,
@@ -232,6 +261,7 @@ async def create_project_endpoint(request: Request):
             critic_report=critic_report,
             risk_report=risk_report,
             quality_score=quality_score,
+            layout_3d=layout_3d,
         )
 
         # Save to database
@@ -441,6 +471,261 @@ GUIDELINES:
 
 
 # ============================================================================
+# 3D / VR Spatial Room Planner & Real-Time Product Catalog Endpoints
+# ============================================================================
+
+def _ensure_project_layout(project: Project) -> RoomLayout3D:
+    """Ensures a project has an initialized RoomLayout3D matching room boundaries."""
+    if project.layout_3d:
+        return project.layout_3d
+    import math
+    room_w = 12.0
+    room_l = 15.0
+    ceiling_h = 9.0
+    if project.spatial_model and project.spatial_model.dimensions:
+        room_w = project.spatial_model.dimensions.width_ft or 12.0
+        room_l = project.spatial_model.dimensions.length_ft or 15.0
+        ceiling_h = project.spatial_model.dimensions.height_ft or 9.0
+    elif project.square_footage > 0:
+        room_l = round(math.sqrt(project.square_footage * 1.25), 1)
+        room_w = round(project.square_footage / room_l, 1)
+
+    layout = RoomLayout3D(
+        project_id=project.project_id,
+        room_width_ft=room_w,
+        room_length_ft=room_l,
+        ceiling_height_ft=ceiling_h,
+        placed_items=[],
+        total_products_cost=0.0,
+        currency=project.currency,
+        clearance_warnings=[],
+    )
+    project.layout_3d = layout
+    return layout
+
+
+def _sync_layout_to_boq(project: Project) -> None:
+    """Synchronizes placed 3D items directly into the project's Bill of Quantities (BOQ)."""
+    if not project.layout_3d:
+        return
+
+    # Calculate total placed products cost
+    total_prod = sum(it.price for it in project.layout_3d.placed_items)
+    project.layout_3d.total_products_cost = round(total_prod, 2)
+
+    if not project.boq:
+        return
+
+    # Filter out previous placed product line items
+    clean_items = [it for it in project.boq.items if it.category != "Placed Products & Fixtures"]
+
+    # Append fresh line items for each placed product
+    for it in project.layout_3d.placed_items:
+        clean_items.append(
+            BOQItem(
+                item_id=f"boq-{it.item_id}",
+                category="Placed Products & Fixtures",
+                item_name=it.name,
+                description=f"{it.brand_or_retailer} [{it.width_ft}'W × {it.depth_ft}'D × {it.height_ft}'H] - {it.location_availability}",
+                quantity=1.0,
+                unit="units",
+                material_unit_rate=it.price,
+                labor_unit_rate=0.0,
+                material_subtotal=it.price,
+                labor_subtotal=0.0,
+                total_amount=it.price,
+                currency=project.currency,
+                is_essential=True,
+                assumption_notes=f"Physical size: {it.width_ft}x{it.depth_ft}x{it.height_ft} ft. Sourced from {it.brand_or_retailer}.",
+            )
+        )
+
+    project.boq.items = clean_items
+
+    # Recalculate totals
+    mat_subtotal = sum(i.material_subtotal for i in clean_items)
+    labor_subtotal = sum(i.labor_subtotal for i in clean_items)
+    permits = project.boq.permits_and_fees
+    raw_sub = mat_subtotal + labor_subtotal + permits
+
+    contingency_rate = (project.boq.contingency_rate_pct or 10.0) / 100.0
+    contingency = round(raw_sub * contingency_rate, 2)
+    grand_total = round(raw_sub + contingency, 2)
+
+    project.boq.subtotal_materials = round(mat_subtotal, 2)
+    project.boq.subtotal_labor = round(labor_subtotal, 2)
+    project.boq.contingency_amount = contingency
+    project.boq.grand_total = grand_total
+
+    # Update Budget Optimization result
+    if project.budget_optimization:
+        project.budget_optimization.optimized_total = grand_total
+        project.budget_optimization.overrun_amount = max(0.0, round(grand_total - project.target_budget, 2))
+        project.budget_optimization.is_over_budget = grand_total > project.target_budget
+
+
+@app.get("/api/products")
+async def get_products_endpoint(
+    category: Optional[str] = None,
+    location: Optional[str] = None,
+    country: Optional[str] = None,
+    search: Optional[str] = None,
+    room_type: Optional[str] = None,
+):
+    """Catalog endpoint providing real products with authentic physical dimensions and pricing."""
+    prods = product_catalog.get_all_products(
+        category=category,
+        room_type=room_type,
+        location=location,
+        country=country,
+        search=search,
+    )
+    return {
+        "success": True,
+        "count": len(prods),
+        "products": [p.model_dump() for p in prods],
+        "available_categories": product_catalog.get_available_categories(),
+        "available_locations": product_catalog.get_available_locations(),
+    }
+
+
+@app.get("/api/projects/{project_id}/layout3d")
+async def get_project_layout3d_endpoint(project_id: str):
+    """Retrieves 3D room layout and placed items with clearance analysis."""
+    project = database.get_project(project_id)
+    if not project:
+        return JSONResponse(status_code=404, content={"error": "Project not found"})
+
+    layout = _ensure_project_layout(project)
+    _, warnings = product_catalog.validate_room_layout_clearance(layout)
+    layout.clearance_warnings = warnings
+    return {"success": True, "layout_3d": layout.model_dump()}
+
+
+@app.post("/api/projects/{project_id}/layout3d")
+async def update_project_layout3d_endpoint(project_id: str, request: Request):
+    """Saves updated 3D layout (placed items, dimensions), runs clearance checks, and syncs BOQ."""
+    try:
+        project = database.get_project(project_id)
+        if not project:
+            return JSONResponse(status_code=404, content={"error": "Project not found"})
+
+        data = await request.json()
+        layout = _ensure_project_layout(project)
+
+        if "room_width_ft" in data:
+            layout.room_width_ft = float(data["room_width_ft"])
+        if "room_length_ft" in data:
+            layout.room_length_ft = float(data["room_length_ft"])
+        if "ceiling_height_ft" in data:
+            layout.ceiling_height_ft = float(data["ceiling_height_ft"])
+
+        if "placed_items" in data:
+            items = []
+            for raw_it in data["placed_items"]:
+                if isinstance(raw_it, dict):
+                    items.append(PlacedItem.model_validate(raw_it))
+            layout.placed_items = items
+
+        is_valid, warnings = product_catalog.validate_room_layout_clearance(layout)
+        layout.clearance_warnings = warnings
+        project.layout_3d = layout
+
+        _sync_layout_to_boq(project)
+        database.update_project(project)
+
+        return {
+            "success": True,
+            "layout_3d": layout.model_dump(),
+            "boq": project.boq.model_dump() if project.boq else None,
+            "budget_optimization": project.budget_optimization.model_dump() if project.budget_optimization else None,
+            "is_valid": is_valid,
+        }
+    except Exception as e:
+        logger.error("Error updating 3D layout: %s", e)
+        return JSONResponse(status_code=500, content={"error": str(e)})
+
+
+@app.post("/api/projects/{project_id}/layout3d/place")
+async def place_product_in_3d_endpoint(project_id: str, request: Request):
+    """Instantiates and places a catalog product into the 3D room with physical dimensions."""
+    try:
+        project = database.get_project(project_id)
+        if not project:
+            return JSONResponse(status_code=404, content={"error": "Project not found"})
+
+        data = await request.json()
+        product_id = data.get("product_id")
+        if not product_id:
+            return JSONResponse(status_code=400, content={"error": "product_id is required"})
+
+        prod = product_catalog.get_product_by_id(product_id)
+        if not prod:
+            return JSONResponse(status_code=404, content={"error": f"Product '{product_id}' not found"})
+
+        x = float(data.get("x", 0.0))
+        z = float(data.get("z", 0.0))
+        rotation_deg = float(data.get("rotation_deg", 0.0))
+
+        placed_item = product_catalog.create_placed_item_from_product(
+            product=prod,
+            x=x,
+            z=z,
+            rotation_deg=rotation_deg,
+        )
+
+        layout = _ensure_project_layout(project)
+        layout.placed_items.append(placed_item)
+
+        is_valid, warnings = product_catalog.validate_room_layout_clearance(layout)
+        layout.clearance_warnings = warnings
+        project.layout_3d = layout
+
+        _sync_layout_to_boq(project)
+        database.update_project(project)
+
+        return {
+            "success": True,
+            "placed_item": placed_item.model_dump(),
+            "layout_3d": layout.model_dump(),
+            "boq": project.boq.model_dump() if project.boq else None,
+            "budget_optimization": project.budget_optimization.model_dump() if project.budget_optimization else None,
+        }
+    except Exception as e:
+        logger.error("Error placing product in 3D: %s", e)
+        return JSONResponse(status_code=500, content={"error": str(e)})
+
+
+@app.delete("/api/projects/{project_id}/layout3d/items/{item_id}")
+async def remove_placed_item_endpoint(project_id: str, item_id: str):
+    """Removes a placed item from the 3D room, recalculates clearance and BOQ cart total."""
+    try:
+        project = database.get_project(project_id)
+        if not project:
+            return JSONResponse(status_code=404, content={"error": "Project not found"})
+
+        layout = _ensure_project_layout(project)
+        layout.placed_items = [it for it in layout.placed_items if it.item_id != item_id]
+
+        is_valid, warnings = product_catalog.validate_room_layout_clearance(layout)
+        layout.clearance_warnings = warnings
+        project.layout_3d = layout
+
+        _sync_layout_to_boq(project)
+        database.update_project(project)
+
+        return {
+            "success": True,
+            "layout_3d": layout.model_dump(),
+            "boq": project.boq.model_dump() if project.boq else None,
+            "budget_optimization": project.budget_optimization.model_dump() if project.budget_optimization else None,
+        }
+    except Exception as e:
+        logger.error("Error removing placed item: %s", e)
+        return JSONResponse(status_code=500, content={"error": str(e)})
+
+
+# ============================================================================
 # Backwards-Compatible Legacy Endpoint (/api/plan)
 # ============================================================================
 
@@ -494,9 +779,19 @@ async def generate_legacy_plan(request: Request):
 # Frontend UI (Enterprise SaaS Single-Page Dashboard)
 # ============================================================================
 
+TEMPLATE_DIR = Path(__file__).resolve().parent / "templates"
+
+
 @app.get("/", response_class=HTMLResponse)
 async def serve_dashboard():
-    """Renders the comprehensive SaaS Renovation Intelligence Platform Dashboard."""
+    """Renders the streamlined 3D Spatial Room Studio, Live Marketplace & Renovation Intelligence Dashboard."""
+    template_path = TEMPLATE_DIR / "dashboard.html"
+    if template_path.exists():
+        return HTMLResponse(content=template_path.read_text(encoding="utf-8"))
+    return HTMLResponse(content="<h1>Dashboard template not found.</h1>", status_code=500)
+
+
+def _unused_legacy_template():
     html = """<!DOCTYPE html>
 <html lang="en">
 <head>

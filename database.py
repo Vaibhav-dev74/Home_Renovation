@@ -23,6 +23,7 @@ from models import (
     CriticReport,
     RiskReport,
     DesignQualityScore,
+    RoomLayout3D,
 )
 
 logger = logging.getLogger(__name__)
@@ -67,9 +68,16 @@ def init_db(db_path: Path = DB_PATH) -> None:
                 permit_json TEXT,
                 critic_json TEXT,
                 risk_json TEXT,
-                quality_json TEXT
+                quality_json TEXT,
+                layout_3d_json TEXT
             )
         """)
+
+        # Migration: ensure layout_3d_json exists in case of an older database schema
+        cursor.execute("PRAGMA table_info(projects)")
+        existing_cols = [row[1] for row in cursor.fetchall()]
+        if "layout_3d_json" not in existing_cols:
+            cursor.execute("ALTER TABLE projects ADD COLUMN layout_3d_json TEXT")
 
         # 2. Design Versions Table
         cursor.execute("""
@@ -118,8 +126,9 @@ def create_project(project: Project, db_path: Path = DB_PATH) -> Project:
                 currency, target_budget, style, created_at, updated_at,
                 current_version, original_image_path, latest_rendering_path,
                 spatial_model_json, current_design_json, boq_json, budget_opt_json,
-                timeline_json, permit_json, critic_json, risk_json, quality_json
-            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                timeline_json, permit_json, critic_json, risk_json, quality_json,
+                layout_3d_json
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         """, (
             project.project_id,
             project.name,
@@ -144,6 +153,7 @@ def create_project(project: Project, db_path: Path = DB_PATH) -> Project:
             project.critic_report.model_dump_json() if project.critic_report else None,
             project.risk_report.model_dump_json() if project.risk_report else None,
             project.quality_score.model_dump_json() if project.quality_score else None,
+            project.layout_3d.model_dump_json() if project.layout_3d else None,
         ))
         conn.commit()
 
@@ -185,6 +195,7 @@ def get_project(project_id: str, db_path: Path = DB_PATH) -> Optional[Project]:
         critic = CriticReport.model_validate_json(data["critic_json"]) if data["critic_json"] else None
         risk = RiskReport.model_validate_json(data["risk_json"]) if data["risk_json"] else None
         quality = DesignQualityScore.model_validate_json(data["quality_json"]) if data["quality_json"] else None
+        layout_3d = RoomLayout3D.model_validate_json(data["layout_3d_json"]) if data.get("layout_3d_json") else None
 
         return Project(
             project_id=data["project_id"],
@@ -210,6 +221,7 @@ def get_project(project_id: str, db_path: Path = DB_PATH) -> Optional[Project]:
             critic_report=critic,
             risk_report=risk,
             quality_score=quality,
+            layout_3d=layout_3d,
         )
 
 
@@ -240,7 +252,7 @@ def update_project(project: Project, db_path: Path = DB_PATH) -> Project:
                 latest_rendering_path = ?, spatial_model_json = ?,
                 current_design_json = ?, boq_json = ?, budget_opt_json = ?,
                 timeline_json = ?, permit_json = ?, critic_json = ?,
-                risk_json = ?, quality_json = ?
+                risk_json = ?, quality_json = ?, layout_3d_json = ?
             WHERE project_id = ?
         """, (
             project.name,
@@ -264,6 +276,7 @@ def update_project(project: Project, db_path: Path = DB_PATH) -> Project:
             project.critic_report.model_dump_json() if project.critic_report else None,
             project.risk_report.model_dump_json() if project.risk_report else None,
             project.quality_score.model_dump_json() if project.quality_score else None,
+            project.layout_3d.model_dump_json() if project.layout_3d else None,
             project.project_id,
         ))
         conn.commit()

@@ -44,20 +44,37 @@ Residential home renovations are plagued by three systemic failures:
 
 ## 🌟 Key Capabilities
 
-### 1. 📐 Spatial Intelligence & Aperture Locking
+### 1. 🎮 3D / VR Spatial Room Studio & Walkthrough
+- **Three.js WebGL Interactive Studio**: Realistic 3D room canvas with true physical dimensions (e.g. 12ft × 15ft) and a 1-foot coordinate measurement grid.
+- **True Physical Scale Placement**: Products (islands, refrigerators, sinks, vanities, dining tables) are rendered strictly to their real-world dimensions (Width × Depth × Height in inches & feet).
+- **Multi-Perspective Navigation**:
+  - **3D Orbit View**: 360° free rotation, panning, and zoom around the architectural model.
+  - **Top-Down 2D Floorplan**: Orthographic view for spacing and door/window clearances.
+  - **First-Person Walkthrough (VR Perspective)**: Eye-level 5.5 ft walkthrough camera inside the room to realistically experience space, headroom, and aisles.
+- **Physical Collision & Clearance Validation**: Real-time collision detection warns against overlapping furniture and flags tight walkways narrower than the 36-inch standard aisle code.
+- **Interactive Spatial HUD**: Click any object in 3D to inspect retailer, price, dimensions, and nudge position (±0.5 ft) or rotate 90°.
+
+### 2. 🛒 Real-Time Product Catalog & Location Marketplace
+- **Location-Specific Sourcing**: Filter by city/region (**Bengaluru, Mumbai, Delhi NCR, Hyderabad, Pune, Austin TX, San Francisco CA, New York NY**) so only products available in the user's market are displayed.
+- **Authentic Retail Pricing & Brands**: Real-world items from **IKEA, Kohler, Samsung, Pepperfry, Urban Ladder, Home Depot, Faber, Carysil, Philips Hue**.
+- **One-Click 3D Placement**: Click *"➕ Place in 3D"* to immediately drop the item into the room and dynamically sync the Bill of Quantities (BOQ) and Cart.
+
+### 3. 📐 Spatial Intelligence & Aperture Locking
 - Extracts a strongly typed Pydantic `SpatialModel` from room photos or floor plans.
 - Strictly documents physical openings (windows, doors, cased thresholds) and utility rough-ins (sink drains, 240V lines, gas stubs).
 - Clearly demarcates **Observed** visual facts from **Inferred** assumptions and **User-Provided** inputs.
 
-### 2. 💎 Non-Destructive Design State & Conversational Editor
+### 4. 💎 Non-Destructive Design State & Conversational Editor
 - Maintains persistent `DesignState` tracking cabinetry, countertops, flooring, paint, lighting, and hardware.
 - Non-destructive delta-updating: commanding *"Make the cabinets sage green"* updates only the cabinet finish while preserving countertop stone, flooring, and room layout.
 - Maintains version history (`v1`, `v2`, `v3`) with changelogs and design rationales.
 
-### 3. 💰 Automated Bill of Quantities (BOQ) & Value Engineering
+### 5. 💰 Automated Bill of Quantities (BOQ) & Value Engineering
 - Mathematically derives material and labor requirements from room dimensions with configurable cutting waste margins (10% on tile, 2 finish coats on paint).
+- Live synchronizes placed 3D products directly into the BOQ Cart with itemized retailer pricing.
 - Supports both **INR (₹)** and **USD ($)**.
 - If scope exceeds the target budget, the **Budget Optimizer** automatically proposes trade-offs (e.g. Italian marble → engineered quartz, saving ₹45,000 / $4,200) without compromising core layout.
+- Exportable to **CSV (Excel)** and **Printable HTML/PDF**.
 - Exportable to **CSV (Excel)** and **Printable HTML/PDF**.
 
 ### 4. ⚖️ Grounded Regulatory RAG Permit Advisor

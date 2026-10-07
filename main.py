@@ -104,10 +104,10 @@ def run_diagnostics():
         print(f"  [FAIL] Core Tools Sanity Error: {e}")
         all_passed = False
 
-    # 7. Check V2 Intelligence Engines
+    # 7. Check V2 Intelligence Engines & 3D Spatial Marketplace
     try:
-        import models, database, spatial_vision, design_engine, budget_optimizer, permit_rag, boq_engine, timeline_engine, critic_engine
-        print("  [OK] V2 Intelligence Engines: Spatial, BOQ, RAG Permits, Timeline DAG, Critic & SQLite verified")
+        import models, database, spatial_vision, design_engine, budget_optimizer, permit_rag, boq_engine, timeline_engine, critic_engine, product_catalog
+        print("  [OK] V2 Intelligence Engines: Spatial, 3D Product Catalog, BOQ, RAG Permits, Timeline DAG, Critic & SQLite verified")
     except Exception as e:
         print(f"  [FAIL] V2 Engines Import Error: {e}")
         all_passed = False

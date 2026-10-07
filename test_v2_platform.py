@@ -340,6 +340,45 @@ class TestProductCatalogAnd3DSpatialPlanner(unittest.TestCase):
         self.assertEqual(len(r_del.json()["layout_3d"]["placed_items"]), 0)
         self.assertEqual(r_del.json()["layout_3d"]["total_products_cost"], 0.0)
 
+    def test_camera_scan_endpoint(self):
+        # 1. Create test project
+        p_res = self.client.post("/api/projects", json={
+            "name": "Live Camera Test Project",
+            "room_type": "kitchen",
+            "scope": "moderate",
+            "square_footage": 180,
+            "location": "Bengaluru, India",
+            "currency": "INR",
+            "target_budget": 800000.0,
+            "style": "modern",
+        })
+        self.assertEqual(p_res.status_code, 200)
+        pid = p_res.json()["project"]["project_id"]
+
+        # 2. Minimal valid 1x1 JPEG base64
+        sample_img = "data:image/jpeg;base64,/9j/4AAQSkZJRgABAQEASABIAAD/2wBDAP//////////////////////////////////////////////////////////////////////////////////////wgALCAABAAEBAREA/8QAFBABAAAAAAAAAAAAAAAAAAAAAP/aAAgBAQABPxA="
+
+        # 3. Perform camera scan
+        scan_res = self.client.post(f"/api/projects/{pid}/camera-scan", json={
+            "image_data": sample_img,
+            "user_notes": "Live camera snapshot from room scanner",
+        })
+        self.assertEqual(scan_res.status_code, 200)
+        scan_data = scan_res.json()
+        self.assertTrue(scan_data["success"])
+        self.assertIn("spatial_model", scan_data)
+        self.assertIn("rendering_prompt", scan_data)
+        self.assertEqual(scan_data["project"]["original_image_path"], sample_img)
+        self.assertGreater(scan_data["project"]["layout_3d"]["room_width_ft"], 0)
+
+        # 4. Error handling: empty image data
+        err_res = self.client.post(f"/api/projects/{pid}/camera-scan", json={})
+        self.assertEqual(err_res.status_code, 400)
+
+        # 5. Error handling: non-existent project
+        non_res = self.client.post("/api/projects/proj-fake-9999/camera-scan", json={"image_data": sample_img})
+        self.assertEqual(non_res.status_code, 404)
+
 
 if __name__ == "__main__":
     unittest.main()

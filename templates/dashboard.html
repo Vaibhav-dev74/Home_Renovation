@@ -528,6 +528,12 @@
       border: 1px solid var(--card-border);
       color: var(--text);
     }
+
+    @keyframes pulse {
+      0% { transform: scale(0.95); opacity: 0.8; }
+      50% { transform: scale(1.15); opacity: 1; }
+      100% { transform: scale(0.95); opacity: 0.8; }
+    }
   </style>
 </head>
 <body>
@@ -548,6 +554,7 @@
       <select id="project-selector" class="form-control" style="width: 250px;" onchange="loadSelectedProject(this.value)">
         <option value="">Loading Projects...</option>
       </select>
+      <button class="btn btn-secondary" onclick="openCameraModal('project')" title="Scan room directly with webcam or phone camera">📸 Camera Scan</button>
       <button class="btn btn-primary" onclick="openNewProjectModal()">✨ New Project</button>
     </div>
   </header>
@@ -631,6 +638,7 @@
               <button class="studio-btn active" id="btn-view-orbit" onclick="setCameraMode('orbit')">🎮 3D Orbit View</button>
               <button class="studio-btn" id="btn-view-plan" onclick="setCameraMode('plan')">📐 Top-Down 2D</button>
               <button class="studio-btn" id="btn-view-vr" onclick="setCameraMode('vr')">🕶️ First-Person Walk (VR)</button>
+              <button class="studio-btn" onclick="openCameraModal('project')" style="color: #60a5fa;" title="Scan room with webcam or phone camera">📸 Live Room Camera</button>
               <button class="studio-btn" onclick="resetStudioCamera()">🔄 Reset</button>
             </div>
             <div class="studio-info" id="studio-room-pill">12.0 ft W × 15.0 ft L × 9.0 ft H</div>
@@ -803,12 +811,18 @@
                 <span>📸</span>
                 <span>Room Vision & Architectural Brief</span>
               </div>
+              <button class="btn btn-primary btn-sm" onclick="openCameraModal('project')">
+                📸 Live Camera Scan
+              </button>
             </div>
             <div style="margin-bottom: 1rem;">
               <h4 style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.5rem;">ORIGINAL ROOM SPACE</h4>
               <img id="img-before" src="" alt="Room Photo" style="width: 100%; max-height: 220px; object-fit: cover; border-radius: 8px; display: none;">
               <div id="img-before-placeholder" style="background: rgba(0,0,0,0.3); border: 1px dashed var(--card-border); padding: 2rem; text-align: center; border-radius: 8px; color: var(--text-muted); font-size: 0.85rem;">
-                No room photo attached to this project.<br>Click "✨ New Project" to upload a room image for computer vision detection.
+                No room photo attached to this project.<br>
+                <div style="margin-top: 0.75rem;">
+                  <button class="btn btn-primary btn-sm" onclick="openCameraModal('project')">📸 Capture with Live Camera</button>
+                </div>
               </div>
             </div>
             <div>
@@ -915,13 +929,147 @@
         </select>
       </div>
       <div class="form-group">
-        <label>Room Photo (Optional for Vision Analysis)</label>
-        <input type="file" id="new-image" class="form-control" accept="image/*">
+        <label>Room Photo (Live Camera or File Upload)</label>
+        <div style="display: flex; gap: 0.5rem; margin-bottom: 0.5rem;">
+          <button type="button" class="btn btn-sm btn-primary" id="btn-toggle-cam-mode" onclick="toggleModalPhotoInput('camera')">📸 Live Camera</button>
+          <button type="button" class="btn btn-sm btn-secondary" id="btn-toggle-file-mode" onclick="toggleModalPhotoInput('file')">📁 Upload File</button>
+        </div>
+        
+        <div id="modal-photo-camera-sec" style="background: rgba(0,0,0,0.25); border: 1px dashed var(--card-border); border-radius: 8px; padding: 1rem; text-align: center;">
+          <div id="modal-cam-preview-box" style="position: relative; max-width: 380px; margin: 0 auto; display: none;">
+            <video id="modal-cam-video" autoplay playsinline muted style="width: 100%; border-radius: 8px; aspect-ratio: 4/3; object-fit: cover; background: #000;"></video>
+            <canvas id="modal-cam-canvas" style="display: none; width: 100%; border-radius: 8px; aspect-ratio: 4/3; object-fit: cover;"></canvas>
+            <div id="modal-cam-hud" style="position: absolute; inset: 0; pointer-events: none; border: 2px dashed rgba(59,130,246,0.6); border-radius: 8px; display: flex; align-items: center; justify-content: center;">
+              <span style="background: rgba(0,0,0,0.6); color: #60a5fa; font-size: 0.72rem; padding: 2px 8px; border-radius: 4px;">AR Room Framing</span>
+            </div>
+          </div>
+          <div id="modal-cam-status" style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.5rem;">
+            Ready to use device camera. Click below to start stream.
+          </div>
+          <div style="display: flex; justify-content: center; gap: 0.5rem; flex-wrap: wrap;">
+            <button type="button" class="btn btn-primary btn-sm" id="btn-modal-cam-start" onclick="startNewProjectCamera()">▶️ Start Camera</button>
+            <button type="button" class="btn btn-accent btn-sm" id="btn-modal-cam-snap" style="display: none;" onclick="snapNewProjectCamera()">⚪ Snap Photo</button>
+            <button type="button" class="btn btn-secondary btn-sm" id="btn-modal-cam-retake" style="display: none;" onclick="retakeNewProjectCamera()">🔄 Retake</button>
+          </div>
+          <div id="modal-cam-captured-badge" style="display: none; margin-top: 0.5rem; color: #34d399; font-size: 0.8rem; font-weight: 600;">
+            ✅ Frame captured from camera!
+          </div>
+        </div>
+
+        <div id="modal-photo-file-sec" style="display: none;">
+          <input type="file" id="new-image" class="form-control" accept="image/*">
+        </div>
       </div>
       <div style="display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 1.5rem;">
         <button class="btn btn-secondary" onclick="closeNewProjectModal()">Cancel</button>
         <button class="btn btn-primary" id="btn-submit-project" onclick="submitNewProject()">Launch Plan</button>
       </div>
+    </div>
+  </div>
+
+  <!-- Live Camera Room Scanner Modal (For Current Project) -->
+  <div id="camera-scanner-modal" class="modal-overlay">
+    <div class="modal-card" style="max-width: 740px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+        <div>
+          <h3 style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.2rem;">
+            <span>📸</span>
+            <span>Live Architectural Room Scanner</span>
+          </h3>
+          <p style="font-size: 0.82rem; color: var(--text-muted);">
+            Point your device camera at room walls and floor. AI analyzes spatial bounds and updates 3D studio geometry in real-time.
+          </p>
+        </div>
+        <button class="btn btn-secondary btn-sm" onclick="closeCameraModal()">✕ Close</button>
+      </div>
+
+      <!-- Video Feed & AR HUD Viewport -->
+      <div class="camera-viewport-wrap" style="position: relative; width: 100%; border-radius: 12px; overflow: hidden; background: #000; box-shadow: 0 12px 30px rgba(0,0,0,0.6); border: 1px solid var(--card-border);">
+        <video id="live-scanner-video" playsinline autoplay muted style="width: 100%; aspect-ratio: 16/9; object-fit: cover; display: block;"></video>
+        <canvas id="live-scanner-canvas" style="display: none; width: 100%; aspect-ratio: 16/9; object-fit: cover;"></canvas>
+
+        <!-- AR HUD Overlay -->
+        <div id="scanner-hud-overlay" style="position: absolute; inset: 0; pointer-events: none; display: flex; flex-direction: column; justify-content: space-between; padding: 1rem;">
+          <!-- Top Info Bar -->
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <div style="display: flex; align-items: center; gap: 0.4rem; background: rgba(0,0,0,0.65); backdrop-filter: blur(4px); padding: 4px 10px; border-radius: 9999px; font-size: 0.72rem; color: #34d399; font-weight: 600; border: 1px solid rgba(52,211,153,0.3);">
+              <span style="display: inline-block; width: 8px; height: 8px; background: #34d399; border-radius: 50%; animation: pulse 1.5s infinite;"></span>
+              <span id="scanner-feed-badge">LIVE CAMERA ACTIVE</span>
+            </div>
+            <div style="background: rgba(0,0,0,0.65); backdrop-filter: blur(4px); padding: 4px 10px; border-radius: 9999px; font-size: 0.72rem; color: #60a5fa; border: 1px solid rgba(96,165,250,0.3);">
+              <span>📐 Spatial Framing Guide</span>
+            </div>
+          </div>
+
+          <!-- AR Crosshair & Grid Lines -->
+          <div id="scanner-hud-lines" style="position: absolute; inset: 0; pointer-events: none;">
+            <!-- Grid Lines (Rule of Thirds) -->
+            <div style="position: absolute; left: 33.33%; top: 0; bottom: 0; border-left: 1px dashed rgba(255,255,255,0.18);"></div>
+            <div style="position: absolute; left: 66.66%; top: 0; bottom: 0; border-left: 1px dashed rgba(255,255,255,0.18);"></div>
+            <div style="position: absolute; top: 33.33%; left: 0; right: 0; border-top: 1px dashed rgba(255,255,255,0.18);"></div>
+            <div style="position: absolute; top: 66.66%; left: 0; right: 0; border-top: 1px dashed rgba(255,255,255,0.18);"></div>
+            <!-- Center Level Crosshair -->
+            <div style="position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: 44px; height: 44px; border: 1px solid rgba(96,165,250,0.6); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+              <div style="width: 8px; height: 1px; background: #60a5fa;"></div>
+              <div style="height: 8px; width: 1px; background: #60a5fa; position: absolute;"></div>
+            </div>
+            <!-- Corner Brackets -->
+            <div style="position: absolute; top: 16px; left: 16px; width: 24px; height: 24px; border-top: 2px solid #3b82f6; border-left: 2px solid #3b82f6;"></div>
+            <div style="position: absolute; top: 16px; right: 16px; width: 24px; height: 24px; border-top: 2px solid #3b82f6; border-right: 2px solid #3b82f6;"></div>
+            <div style="position: absolute; bottom: 16px; left: 16px; width: 24px; height: 24px; border-bottom: 2px solid #3b82f6; border-left: 2px solid #3b82f6;"></div>
+            <div style="position: absolute; bottom: 16px; right: 16px; width: 24px; height: 24px; border-bottom: 2px solid #3b82f6; border-right: 2px solid #3b82f6;"></div>
+          </div>
+
+          <!-- Bottom Architectural Prompt -->
+          <div style="text-align: center; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); padding: 4px 12px; border-radius: 6px; font-size: 0.75rem; color: #cbd5e1; align-self: center; margin-bottom: 0.5rem;">
+            Tip: Frame wall corners and floor boundaries within view for best spatial measurement.
+          </div>
+        </div>
+
+        <!-- Camera Permission / Error Fallback Notice -->
+        <div id="camera-error-fallback" style="display: none; position: absolute; inset: 0; background: rgba(13,19,34,0.95); flex-direction: column; align-items: center; justify-content: center; padding: 2rem; text-align: center;">
+          <span style="font-size: 2.5rem; margin-bottom: 0.75rem;">📷⚠️</span>
+          <h4 style="color: #f87171; margin-bottom: 0.5rem;">Camera Access Unavailable</h4>
+          <p id="camera-error-msg" style="font-size: 0.85rem; color: var(--text-muted); max-width: 440px; margin-bottom: 1.25rem;">
+            Could not start camera. Please ensure camera permissions are allowed in your browser settings (click lock or camera icon in address bar) or connect a webcam.
+          </p>
+          <div style="display: flex; gap: 0.75rem;">
+            <button class="btn btn-primary btn-sm" onclick="startCameraStream()">🔄 Try Again</button>
+            <button class="btn btn-secondary btn-sm" onclick="closeCameraModal()">Cancel</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Camera Controls & Device Selector Bar -->
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 1rem; flex-wrap: wrap; gap: 0.75rem;">
+        <div style="display: flex; align-items: center; gap: 0.5rem;">
+          <span style="font-size: 0.8rem; color: var(--text-muted);">Camera Source:</span>
+          <select id="camera-source-select" class="form-control" style="width: 220px; font-size: 0.8rem;" onchange="switchCameraSource(this.value)">
+            <option value="">Default Camera</option>
+          </select>
+          <button class="btn btn-secondary btn-sm" onclick="flipCamera()" title="Flip Front / Rear Camera">🔄 Flip</button>
+          <button class="btn btn-secondary btn-sm" onclick="toggleARGrid()" title="Toggle Guide Lines">📐 Guides</button>
+        </div>
+
+        <!-- Action / Shutter Buttons -->
+        <div style="display: flex; align-items: center; gap: 0.5rem;" id="scanner-action-buttons">
+          <button class="btn btn-primary" id="btn-snap-frame" onclick="snapLiveCameraFrame()">
+            📸 Capture Room Frame
+          </button>
+        </div>
+
+        <div style="display: none; align-items: center; gap: 0.5rem;" id="scanner-review-buttons">
+          <button class="btn btn-secondary" onclick="retakeLiveCameraFrame()">
+            🔄 Retake
+          </button>
+          <button class="btn btn-accent" id="btn-analyze-frame" onclick="analyzeCameraSnapshot()">
+            ⚡ Analyze & Update 3D Studio
+          </button>
+        </div>
+      </div>
+
+      <!-- Real-time Status / Loading Message -->
+      <div id="camera-scan-status-text" style="font-size: 0.82rem; color: #60a5fa; margin-top: 0.75rem; display: none;"></div>
     </div>
   </div>
 
@@ -955,7 +1103,10 @@
     }
 
     function openNewProjectModal() { document.getElementById('new-project-modal').style.display = 'flex'; }
-    function closeNewProjectModal() { document.getElementById('new-project-modal').style.display = 'none'; }
+    function closeNewProjectModal() { 
+      document.getElementById('new-project-modal').style.display = 'none'; 
+      stopNewProjectCamera();
+    }
 
     // Initial Load & Project Synchronization
     window.addEventListener('DOMContentLoaded', async () => {
@@ -1630,16 +1781,21 @@
         style: document.getElementById('new-style').value,
       };
 
-      const fileInput = document.getElementById('new-image');
-      if (fileInput.files.length > 0) {
-        const reader = new FileReader();
-        reader.onload = async function() {
-          payload.image_data = reader.result;
-          await executeCreateProject(payload);
-        };
-        reader.readAsDataURL(fileInput.files[0]);
-      } else {
+      if (newProjectCameraImage) {
+        payload.image_data = newProjectCameraImage;
         await executeCreateProject(payload);
+      } else {
+        const fileInput = document.getElementById('new-image');
+        if (fileInput && fileInput.files.length > 0) {
+          const reader = new FileReader();
+          reader.onload = async function() {
+            payload.image_data = reader.result;
+            await executeCreateProject(payload);
+          };
+          reader.readAsDataURL(fileInput.files[0]);
+        } else {
+          await executeCreateProject(payload);
+        }
       }
     }
 
@@ -1724,6 +1880,319 @@
       }
       chatBox.scrollTop = chatBox.scrollHeight;
     }
+
+    // =========================================================================
+    // CAMERA & WEBCAM SPATIAL SCANNER SYSTEM
+    // =========================================================================
+    let activeCameraStream = null;
+    let modalCameraStream = null;
+    let currentFacingMode = 'environment';
+    let currentDeviceId = null;
+    let capturedCameraImage = null;
+    let newProjectCameraImage = null;
+
+    // Toggle photo input mode in New Project Modal
+    function toggleModalPhotoInput(mode) {
+      const camBtn = document.getElementById('btn-toggle-cam-mode');
+      const fileBtn = document.getElementById('btn-toggle-file-mode');
+      const camSec = document.getElementById('modal-photo-camera-sec');
+      const fileSec = document.getElementById('modal-photo-file-sec');
+
+      if (mode === 'camera') {
+        camBtn.className = 'btn btn-sm btn-primary';
+        fileBtn.className = 'btn btn-sm btn-secondary';
+        camSec.style.display = 'block';
+        fileSec.style.display = 'none';
+      } else {
+        camBtn.className = 'btn btn-sm btn-secondary';
+        fileBtn.className = 'btn btn-sm btn-primary';
+        camSec.style.display = 'none';
+        fileSec.style.display = 'block';
+        stopNewProjectCamera();
+      }
+    }
+
+    async function startNewProjectCamera() {
+      try {
+        const video = document.getElementById('modal-cam-video');
+        const previewBox = document.getElementById('modal-cam-preview-box');
+        const startBtn = document.getElementById('btn-modal-cam-start');
+        const snapBtn = document.getElementById('btn-modal-cam-snap');
+        const retakeBtn = document.getElementById('btn-modal-cam-retake');
+        const status = document.getElementById('modal-cam-status');
+
+        if (modalCameraStream) {
+          modalCameraStream.getTracks().forEach(t => t.stop());
+        }
+
+        modalCameraStream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: { ideal: 'environment' }, width: { ideal: 1280 }, height: { ideal: 720 } },
+          audio: false
+        });
+
+        video.srcObject = modalCameraStream;
+        previewBox.style.display = 'block';
+        document.getElementById('modal-cam-canvas').style.display = 'none';
+        video.style.display = 'block';
+        startBtn.style.display = 'none';
+        snapBtn.style.display = 'inline-flex';
+        retakeBtn.style.display = 'none';
+        status.innerText = "Camera live! Point at your room and click 'Snap Photo'.";
+      } catch (err) {
+        console.error("Camera access error:", err);
+        document.getElementById('modal-cam-status').innerHTML = 
+          `<span style="color:#ef4444;">Camera access denied or unavailable: ${err.message}. Please check browser permissions.</span>`;
+      }
+    }
+
+    function snapNewProjectCamera() {
+      const video = document.getElementById('modal-cam-video');
+      const canvas = document.getElementById('modal-cam-canvas');
+      const snapBtn = document.getElementById('btn-modal-cam-snap');
+      const retakeBtn = document.getElementById('btn-modal-cam-retake');
+      const status = document.getElementById('modal-cam-status');
+      const badge = document.getElementById('modal-cam-captured-badge');
+
+      if (!video || !video.videoWidth) return;
+
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+      newProjectCameraImage = canvas.toDataURL('image/jpeg', 0.88);
+
+      // Stop stream to release camera
+      if (modalCameraStream) {
+        modalCameraStream.getTracks().forEach(t => t.stop());
+        modalCameraStream = null;
+      }
+
+      video.style.display = 'none';
+      canvas.style.display = 'block';
+      snapBtn.style.display = 'none';
+      retakeBtn.style.display = 'inline-flex';
+      badge.style.display = 'block';
+      status.innerText = "Photo captured! It will be used for AI spatial detection upon launching plan.";
+    }
+
+    function retakeNewProjectCamera() {
+      newProjectCameraImage = null;
+      document.getElementById('modal-cam-captured-badge').style.display = 'none';
+      startNewProjectCamera();
+    }
+
+    function stopNewProjectCamera() {
+      if (modalCameraStream) {
+        modalCameraStream.getTracks().forEach(t => t.stop());
+        modalCameraStream = null;
+      }
+      const video = document.getElementById('modal-cam-video');
+      if (video) video.srcObject = null;
+    }
+
+    // =========================================================================
+    // DEDICATED LIVE ROOM CAMERA SCANNER MODAL (FOR CURRENT PROJECT)
+    // =========================================================================
+    async function openCameraModal(mode = 'project') {
+      if (mode === 'project' && !currentProject) {
+        alert("Please select or start a project before scanning room.");
+        return;
+      }
+
+      document.getElementById('camera-scanner-modal').style.display = 'flex';
+      document.getElementById('camera-error-fallback').style.display = 'none';
+      document.getElementById('camera-scan-status-text').style.display = 'none';
+      capturedCameraImage = null;
+
+      // Reset buttons and elements
+      document.getElementById('scanner-action-buttons').style.display = 'flex';
+      document.getElementById('scanner-review-buttons').style.display = 'none';
+      document.getElementById('live-scanner-canvas').style.display = 'none';
+      document.getElementById('live-scanner-video').style.display = 'block';
+      document.getElementById('scanner-hud-overlay').style.display = 'flex';
+
+      await populateCameraDevices();
+      await startCameraStream();
+    }
+
+    function closeCameraModal() {
+      stopCameraStream();
+      document.getElementById('camera-scanner-modal').style.display = 'none';
+    }
+
+    async function populateCameraDevices() {
+      try {
+        const select = document.getElementById('camera-source-select');
+        select.innerHTML = '<option value="">Default Camera</option>';
+        if (!navigator.mediaDevices || !navigator.mediaDevices.enumerateDevices) return;
+
+        const devices = await navigator.mediaDevices.enumerateDevices();
+        const videoDevices = devices.filter(d => d.kind === 'videoinput');
+
+        videoDevices.forEach((device, index) => {
+          const opt = document.createElement('option');
+          opt.value = device.deviceId;
+          opt.innerText = device.label || `Camera ${index + 1} (${device.facing || 'Video Device'})`;
+          select.appendChild(opt);
+        });
+      } catch (e) {
+        console.warn("Could not enumerate camera devices:", e);
+      }
+    }
+
+    async function startCameraStream(deviceId = null) {
+      const video = document.getElementById('live-scanner-video');
+      const fallback = document.getElementById('camera-error-fallback');
+      const errorMsg = document.getElementById('camera-error-msg');
+
+      stopCameraStream();
+
+      const constraints = {
+        video: deviceId 
+          ? { deviceId: { exact: deviceId } } 
+          : { facingMode: { ideal: currentFacingMode }, width: { ideal: 1920 }, height: { ideal: 1080 } },
+        audio: false
+      };
+
+      try {
+        activeCameraStream = await navigator.mediaDevices.getUserMedia(constraints);
+        video.srcObject = activeCameraStream;
+        fallback.style.display = 'none';
+        document.getElementById('scanner-feed-badge').innerText = "LIVE CAMERA ACTIVE";
+      } catch (err) {
+        console.error("Camera stream error:", err);
+        fallback.style.display = 'flex';
+        errorMsg.innerText = `Unable to access camera (${err.name}: ${err.message}). Please ensure camera permissions are allowed in your browser settings (look for camera/lock icon in address bar) or connect a webcam device.`;
+      }
+    }
+
+    function stopCameraStream() {
+      if (activeCameraStream) {
+        activeCameraStream.getTracks().forEach(track => track.stop());
+        activeCameraStream = null;
+      }
+      const video = document.getElementById('live-scanner-video');
+      if (video) video.srcObject = null;
+    }
+
+    function switchCameraSource(deviceId) {
+      currentDeviceId = deviceId;
+      startCameraStream(deviceId);
+    }
+
+    function flipCamera() {
+      currentFacingMode = (currentFacingMode === 'environment') ? 'user' : 'environment';
+      startCameraStream();
+    }
+
+    function toggleARGrid() {
+      const lines = document.getElementById('scanner-hud-lines');
+      lines.style.display = (lines.style.display === 'none') ? 'block' : 'none';
+    }
+
+    function snapLiveCameraFrame() {
+      const video = document.getElementById('live-scanner-video');
+      const canvas = document.getElementById('live-scanner-canvas');
+
+      if (!video || !video.videoWidth) {
+        alert("Camera stream is not ready yet.");
+        return;
+      }
+
+      canvas.width = video.videoWidth;
+      canvas.height = video.videoHeight;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+      capturedCameraImage = canvas.toDataURL('image/jpeg', 0.90);
+
+      // Freeze frame preview
+      video.style.display = 'none';
+      canvas.style.display = 'block';
+      document.getElementById('scanner-hud-overlay').style.display = 'none';
+
+      // Switch to review buttons
+      document.getElementById('scanner-action-buttons').style.display = 'none';
+      document.getElementById('scanner-review-buttons').style.display = 'flex';
+    }
+
+    function retakeLiveCameraFrame() {
+      capturedCameraImage = null;
+      document.getElementById('live-scanner-canvas').style.display = 'none';
+      document.getElementById('live-scanner-video').style.display = 'block';
+      document.getElementById('scanner-hud-overlay').style.display = 'flex';
+      document.getElementById('scanner-action-buttons').style.display = 'flex';
+      document.getElementById('scanner-review-buttons').style.display = 'none';
+      document.getElementById('camera-scan-status-text').style.display = 'none';
+    }
+
+    async function analyzeCameraSnapshot() {
+      if (!currentProject) {
+        alert("No active project selected.");
+        return;
+      }
+      if (!capturedCameraImage) {
+        alert("Please capture a photo first.");
+        return;
+      }
+
+      const btn = document.getElementById('btn-analyze-frame');
+      const statusText = document.getElementById('camera-scan-status-text');
+      btn.disabled = true;
+      btn.innerText = "Analyzing Spatial Geometry...";
+      statusText.style.display = 'block';
+      statusText.innerText = "🧠 Running Multimodal Spatial Vision (Gemini)... Detecting room boundaries, walls, and openings...";
+
+      try {
+        const res = await fetch(`/api/projects/${currentProject.project_id}/camera-scan`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            image_data: capturedCameraImage,
+            user_notes: "Live camera capture from room scanner HUD"
+          })
+        });
+
+        const data = await res.json();
+        if (data.success && data.project) {
+          statusText.innerText = "✅ Spatial model synthesized! Updating 3D studio...";
+          currentProject = data.project;
+
+          // Update 3D studio layout
+          if (data.project.layout_3d) {
+            currentLayout = data.project.layout_3d;
+            render3DRoom(currentLayout);
+          }
+
+          // Update UI
+          renderProjectUI(currentProject);
+
+          // Add assistant message to chat
+          const chatBox = document.getElementById('chat-box');
+          if (chatBox && data.message) {
+            chatBox.innerHTML += `<div class="chat-msg assistant">${data.message}</div>`;
+            chatBox.scrollTop = chatBox.scrollHeight;
+          }
+
+          setTimeout(() => {
+            closeCameraModal();
+            // Switch to 3D studio tab so user immediately sees their room!
+            switchTab('studio3d', document.querySelectorAll('.nav-item')[0]);
+          }, 800);
+
+        } else {
+          alert("Error analyzing camera snapshot: " + (data.error || "Unknown"));
+        }
+      } catch (err) {
+        console.error("Camera scan API error:", err);
+        alert("Failed to process camera scan: " + err);
+      } finally {
+        btn.disabled = false;
+        btn.innerText = "⚡ Analyze & Update 3D Studio";
+      }
+    }
   </script>
 </body>
 </html>
+

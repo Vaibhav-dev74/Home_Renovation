@@ -54,7 +54,13 @@ Residential home renovations are plagued by three systemic failures:
 - **Physical Collision & Clearance Validation**: Real-time collision detection warns against overlapping furniture and flags tight walkways narrower than the 36-inch standard aisle code.
 - **Interactive Spatial HUD**: Click any object in 3D to inspect retailer, price, dimensions, and nudge position (±0.5 ft) or rotate 90°.
 
-### 2. 🛒 Real-Time Product Catalog & Location Marketplace
+### 2. 📸 Live Architectural Room Camera Scanner (Zero Upload Friction)
+- **Direct Camera / Webcam Capture**: Capture room images directly through your device webcam, laptop camera, or smartphone/tablet camera without the need to take photos beforehand, save to disk, or upload image files.
+- **Architectural AR HUD Overlay**: Real-time alignment grid (rule-of-thirds), level horizon crosshairs, corner brackets, and framing prompts guiding optimal spatial capture.
+- **Live Spatial Synthesis (`POST /api/projects/{id}/camera-scan`)**: Streams frame directly to backend spatial vision, infers room dimensions ($W \times L \times H$), identifies openings/fixtures, and immediately updates 3D studio boundaries.
+- **Device Flexibility**: Supports camera switching (Front vs. Back/Environment Wide-angle), resolution optimization, and instant review/retake flows.
+
+### 3. 🛒 Real-Time Product Catalog & Location Marketplace
 - **Location-Specific Sourcing**: Filter by city/region (**Bengaluru, Mumbai, Delhi NCR, Hyderabad, Pune, Austin TX, San Francisco CA, New York NY**) so only products available in the user's market are displayed.
 - **Authentic Retail Pricing & Brands**: Real-world items from **IKEA, Kohler, Samsung, Pepperfry, Urban Ladder, Home Depot, Faber, Carysil, Philips Hue**.
 - **One-Click 3D Placement**: Click *"➕ Place in 3D"* to immediately drop the item into the room and dynamically sync the Bill of Quantities (BOQ) and Cart.

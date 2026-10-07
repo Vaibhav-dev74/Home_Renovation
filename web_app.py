@@ -288,6 +288,100 @@ async def get_project_endpoint(project_id: str):
     return {"success": True, "project": project.model_dump()}
 
 
+@app.post("/api/projects/{project_id}/camera-scan")
+async def project_camera_scan_endpoint(project_id: str, request: Request):
+    """Processes a live camera capture for an existing project.
+    
+    Extracts spatial dimensions, openings, and utility elements using multimodal
+    spatial vision, updates project 3D room boundaries and rendering prompt,
+    and returns the enriched project state.
+    """
+    try:
+        project = database.get_project(project_id)
+        if not project:
+            return JSONResponse(status_code=404, content={"success": False, "error": "Project not found"})
+
+        try:
+            data = await request.json()
+        except Exception:
+            data = {}
+
+        image_data = data.get("image_data")
+        user_notes = (data.get("user_notes") or "").strip()
+
+        if not image_data:
+            return JSONResponse(status_code=400, content={"success": False, "error": "No camera image data received"})
+
+        # Run spatial vision analysis
+        spatial_model = await spatial_vision.analyze_room_spatial_image(
+            image_base64=image_data,
+            room_type=project.room_type,
+            square_footage_hint=project.square_footage,
+            user_notes=user_notes or "Live camera frame captured from user device",
+        )
+
+        project.original_image_path = image_data
+        project.spatial_model = spatial_model
+
+        # Update 3D room bounds if dimensions were inferred/detected
+        layout = _ensure_project_layout(project)
+        if spatial_model and spatial_model.dimensions:
+            new_w = spatial_model.dimensions.width_ft
+            new_l = spatial_model.dimensions.length_ft
+            new_h = spatial_model.dimensions.height_ft
+            if new_w and new_w > 0:
+                layout.room_width_ft = float(new_w)
+            if new_l and new_l > 0:
+                layout.room_length_ft = float(new_l)
+            if new_h and new_h > 0:
+                layout.ceiling_height_ft = float(new_h)
+            
+            # Re-validate clearance warnings with new room dimensions
+            _, warnings = product_catalog.validate_room_layout_clearance(layout)
+            layout.clearance_warnings = warnings
+            project.layout_3d = layout
+
+        # Update grounded rendering prompt
+        rendering_prompt = design_engine.build_grounded_rendering_prompt(
+            design_state=project.current_design or design_engine.create_initial_design_state(
+                room_type=project.room_type,
+                style=project.style,
+                target_budget=project.target_budget,
+                currency=project.currency,
+            ),
+            spatial_model=spatial_model,
+            room_type=project.room_type,
+        )
+
+        # Record assistant chat message
+        summary_msg = (
+            f"📸 Live camera scan processed! Inferred room dimensions: "
+            f"{layout.room_width_ft}' W × {layout.room_length_ft}' L × {layout.ceiling_height_ft}' H. "
+            f"Identified {len(spatial_model.openings)} opening(s) and {len(spatial_model.fixed_elements)} utility element(s). "
+            f"3D Studio boundaries updated accordingly."
+        )
+        database.add_chat_message(
+            project_id=project_id,
+            role="assistant",
+            message=summary_msg,
+            intent="camera_spatial_scan",
+        )
+
+        database.update_project(project)
+
+        return {
+            "success": True,
+            "project": project.model_dump(),
+            "spatial_model": spatial_model.model_dump(),
+            "rendering_prompt": rendering_prompt,
+            "message": summary_msg,
+        }
+
+    except Exception as e:
+        logger.error("Error processing camera scan for %s: %s", project_id, e)
+        return JSONResponse(status_code=500, content={"success": False, "error": str(e)})
+
+
 @app.post("/api/projects/{project_id}/edit")
 async def edit_project_design(project_id: str, request: Request):
     """Applies non-destructive conversational delta-edit to design state and creates a new version."""

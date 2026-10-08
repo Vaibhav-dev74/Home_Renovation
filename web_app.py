@@ -382,6 +382,130 @@ async def project_camera_scan_endpoint(project_id: str, request: Request):
         return JSONResponse(status_code=500, content={"success": False, "error": str(e)})
 
 
+@app.post("/api/projects/{project_id}/location")
+async def update_project_location_endpoint(project_id: str, request: Request):
+    """Updates the project's location details according to the user.
+    
+    Re-evaluates local regulatory building codes (RAG), recalculates local contractor
+    rates in the BOQ, adjusts currency if requested, re-optimizes budget, and syncs
+    the 3D studio and marketplace availability.
+    """
+    try:
+        project = database.get_project(project_id)
+        if not project:
+            return JSONResponse(status_code=404, content={"success": False, "error": "Project not found"})
+
+        try:
+            data = await request.json()
+        except Exception:
+            data = {}
+
+        new_location = (data.get("location") or "").strip()
+        requested_currency = data.get("currency")
+        auto_adapt_currency = bool(data.get("auto_adapt_currency", True))
+
+        if not new_location:
+            return JSONResponse(status_code=400, content={"success": False, "error": "Location cannot be empty"})
+
+        old_location = project.location
+        old_currency = project.currency
+        project.location = new_location
+
+        # Determine target currency
+        if requested_currency and requested_currency.upper() in ["INR", "USD"]:
+            new_currency = Currency.USD if requested_currency.upper() == "USD" else Currency.INR
+        elif auto_adapt_currency:
+            loc_lower = new_location.lower()
+            india_terms = [
+                "india", "bengaluru", "bangalore", "mumbai", "delhi", "pune", "hyderabad",
+                "chennai", "kolkata", "noida", "gurgaon", "gurugram", "ahmedabad", "jaipur"
+            ]
+            if any(term in loc_lower for term in india_terms):
+                new_currency = Currency.INR
+            elif any(term in loc_lower for term in ["us", "usa", "texas", "austin", "california", "ca", "ny", "york", "francisco", "seattle", "chicago", "miami"]):
+                new_currency = Currency.USD
+            else:
+                new_currency = old_currency
+        else:
+            new_currency = old_currency
+
+        # Handle currency conversion for target budget if currency changed
+        if new_currency != old_currency:
+            project.currency = new_currency
+            if old_currency == Currency.USD and new_currency == Currency.INR:
+                project.target_budget = round(project.target_budget * 86.0, -3)
+            elif old_currency == Currency.INR and new_currency == Currency.USD:
+                project.target_budget = round(project.target_budget / 86.0, -2)
+
+        # 1. Re-evaluate Regulatory RAG for new municipal / national jurisdiction
+        permit_assessment = permit_rag.query_regulatory_rag(
+            room_type=project.room_type,
+            scope=project.scope,
+            structural_changes=bool(project.permit_assessment and any("structural" in (p or "").lower() for p in project.permit_assessment.permits_required)),
+            plumbing_changes=bool(project.permit_assessment and any("plumbing" in (p or "").lower() for p in project.permit_assessment.trade_permits)),
+            electrical_changes=True,
+            location=project.location,
+        )
+        project.permit_assessment = permit_assessment
+
+        # 2. Re-generate Automated BOQ for updated location & currency
+        new_boq = boq_engine.generate_automated_boq(
+            project_id=project.project_id,
+            room_type=project.room_type,
+            scope=project.scope,
+            square_footage=project.square_footage,
+            spatial_model=project.spatial_model,
+            design_state=project.current_design,
+            currency=project.currency,
+        )
+        project.boq = new_boq
+
+        # 3. Synchronize 3D room layout currency and placed products
+        if project.layout_3d:
+            project.layout_3d.currency = project.currency
+            _sync_layout_to_boq(project)
+
+        # 4. Re-run Budget Optimization Engine
+        project.budget_optimization = budget_optimizer.optimize_renovation_budget(
+            room_type=project.room_type,
+            scope=project.scope,
+            square_footage=project.square_footage,
+            target_budget=project.target_budget,
+            currency=project.currency,
+            current_design=project.current_design,
+        )
+
+        # 5. Persist updates
+        database.update_project(project)
+
+        sym = "₹" if project.currency == Currency.INR else "$"
+        primary_code = permit_assessment.citations[0].code_standard if permit_assessment.citations else "Model Safety Codes"
+        confirm_msg = (
+            f"📍 Project location updated to **{project.location}** (from {old_location}). "
+            f"Building safety codes re-evaluated: **{primary_code}** ({permit_assessment.jurisdiction_detected}). "
+            f"Budget envelope set to **{sym}{project.target_budget:,.0f}**."
+        )
+        database.add_chat_message(
+            project_id=project_id,
+            role="assistant",
+            message=confirm_msg,
+            intent="location_update",
+            metadata={"new_location": new_location, "jurisdiction": permit_assessment.jurisdiction_detected},
+        )
+
+        return {
+            "success": True,
+            "project": project.model_dump(),
+            "message": confirm_msg,
+            "jurisdiction": permit_assessment.jurisdiction_detected,
+            "primary_code_standard": primary_code,
+        }
+
+    except Exception as e:
+        logger.error("Error updating location for %s: %s", project_id, e)
+        return JSONResponse(status_code=500, content={"success": False, "error": str(e)})
+
+
 @app.post("/api/projects/{project_id}/edit")
 async def edit_project_design(project_id: str, request: Request):
     """Applies non-destructive conversational delta-edit to design state and creates a new version."""

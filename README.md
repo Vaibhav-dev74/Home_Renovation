@@ -65,36 +65,42 @@ Residential home renovations are plagued by three systemic failures:
 - **Authentic Retail Pricing & Brands**: Real-world items from **IKEA, Kohler, Samsung, Pepperfry, Urban Ladder, Home Depot, Faber, Carysil, Philips Hue**.
 - **One-Click 3D Placement**: Click *"➕ Place in 3D"* to immediately drop the item into the room and dynamically sync the Bill of Quantities (BOQ) and Cart.
 
-### 3. 📐 Spatial Intelligence & Aperture Locking
+### 4. 📍 User Location Customization & Browser GPS Auto-Detection
+- **Dynamic Location Switching**: Switch project location/jurisdiction at any time directly from the top navigation bar or via conversational AI (*"Change location to Mumbai"*).
+- **One-Click Browser GPS Auto-Detection**: Leverages HTML5 `navigator.geolocation` with reverse geocoding via OpenStreetMap Nominatim and timezone fallback to automatically identify the user's exact city and country with zero manual typing.
+- **Regional Presets & Custom Addressing**: Instant presets for top Indian and US/Global metropolitan markets or enter any custom city, state, or postal zip.
+- **Automatic Currency & Budget Envelope Conversion**: Automatically adapts between Indian Rupee (**INR ₹**) and US Dollar (**USD $**), proportionally scaling target budgets, labor rates, and marketplace product pricing.
+- **Live Building Code & Permit Recalculation**: Instant re-evaluation of regulatory standards via Regulatory RAG (e.g., switching to India prompts **NBC 2016 Part 4/8/9** while switching to the US prompts **IRC 2021 / NEC 2023**), immediately updating contractor labor rates, BOQ, and value engineering.
+
+### 5. 📐 Spatial Intelligence & Aperture Locking
 - Extracts a strongly typed Pydantic `SpatialModel` from room photos or floor plans.
 - Strictly documents physical openings (windows, doors, cased thresholds) and utility rough-ins (sink drains, 240V lines, gas stubs).
 - Clearly demarcates **Observed** visual facts from **Inferred** assumptions and **User-Provided** inputs.
 
-### 4. 💎 Non-Destructive Design State & Conversational Editor
+### 6. 💎 Non-Destructive Design State & Conversational Editor
 - Maintains persistent `DesignState` tracking cabinetry, countertops, flooring, paint, lighting, and hardware.
 - Non-destructive delta-updating: commanding *"Make the cabinets sage green"* updates only the cabinet finish while preserving countertop stone, flooring, and room layout.
 - Maintains version history (`v1`, `v2`, `v3`) with changelogs and design rationales.
 
-### 5. 💰 Automated Bill of Quantities (BOQ) & Value Engineering
+### 7. 💰 Automated Bill of Quantities (BOQ) & Value Engineering
 - Mathematically derives material and labor requirements from room dimensions with configurable cutting waste margins (10% on tile, 2 finish coats on paint).
 - Live synchronizes placed 3D products directly into the BOQ Cart with itemized retailer pricing.
 - Supports both **INR (₹)** and **USD ($)**.
 - If scope exceeds the target budget, the **Budget Optimizer** automatically proposes trade-offs (e.g. Italian marble → engineered quartz, saving ₹45,000 / $4,200) without compromising core layout.
 - Exportable to **CSV (Excel)** and **Printable HTML/PDF**.
-- Exportable to **CSV (Excel)** and **Printable HTML/PDF**.
 
-### 4. ⚖️ Grounded Regulatory RAG Permit Advisor
+### 8. ⚖️ Grounded Regulatory RAG Permit Advisor
 - Queries a verified regulatory corpus:
   - **International Residential Code (IRC 2021/2024)**: Egress apertures (IRC R310), plumbing clearances (IRC R307), drainage pipe slopes (IRC P3005).
   - **National Electrical Code (NEC 2023 NFPA 70)**: Wet-location GFCI protection (NEC 210.8), dedicated 20A kitchen branch circuits (NEC 210.52).
   - **National Building Code of India (NBC 2016)**: Fire safety egress (Part 4), two-pipe soil separation (Part 9), natural lighting minimums (Part 8).
 - Provides grounded citations with section numbers and local municipal AHJ notices. Never hallucinates legal code.
 
-### 5. ⏱️ Construction Timeline DAG & Critical Path
+### 9. ⏱️ Construction Timeline DAG & Critical Path
 - Models construction as a Directed Acyclic Graph (DAG) with explicit trade handoffs (Demolition → MEP rough-ins → City inspection → Drywall → Tiling → Cabinetry → Fixture trims).
 - Automatically calculates total working days, calendar duration, and critical path bottlenecks.
 
-### 6. 🛡️ Multi-Agent Critic & Renovation Risk Engine
+### 10. 🛡️ Multi-Agent Critic & Renovation Risk Engine
 - Automated 5-pillar validation: Layout clashes, budget compliance, safety codes, trade sequencing, and user intent.
 - Deterministic 6-pillar **Design Quality Score** (0–100) and multi-domain **Renovation Risk Matrix** (Structural, Plumbing, Electrical, Budget, Timeline).
 
@@ -233,8 +239,8 @@ flowchart TD
 | **Data Validation** | Pydantic v2 (`pydantic>=2.0.0`) | Strongly-typed domain models & schemas |
 | **Persistence Layer** | SQLite (`sqlite3`) | Relational project store, versioning, audit trail |
 | **Image Processing** | Pillow (`PIL>=10.0.0`) | Photo decoding, dimension handling |
-| **Frontend UI** | HTML5, CSS3, Vanilla JS | Responsive SaaS dashboard, Glassmorphism design |
-| **Testing & CI** | `unittest` + `httpx` | 22 comprehensive unit & integration test cases |
+| **Frontend UI** | HTML5, CSS3, Vanilla JS, Three.js | Responsive SaaS dashboard, 3D WebGL Studio, Camera HUD |
+| **Testing & CI** | `unittest` + `httpx` | 29 comprehensive unit & integration test cases |
 
 ---
 
@@ -322,6 +328,11 @@ Open your browser at: **[http://localhost:8000](http://localhost:8000)**
 | `GET` | `/api/projects` | Lists all saved renovation projects. |
 | `POST` | `/api/projects` | Creates a new renovation project, runs full intelligence pipeline, and persists to SQLite. |
 | `GET` | `/api/projects/{id}` | Retrieves complete project record and all domain models. |
+| `POST` | `/api/projects/{id}/location` | Dynamically changes project location/jurisdiction, auto-adapts currency (INR/USD), and re-evaluates regulatory codes (IRC/NBC RAG), labor rates & BOQ. |
+| `POST` | `/api/projects/{id}/camera-scan` | Directly streams device webcam/camera frame into spatial computer vision to infer room dimensions and aperture boundaries. |
+| `GET` | `/api/catalog/products` | Retrieves real-time regional products filtered by location, room type, and price range. |
+| `POST` | `/api/projects/{id}/layout/place-product` | Places catalog product in 3D room coordinates with collision detection and automated BOQ sync. |
+| `POST` | `/api/projects/{id}/layout/update-item` | Modifies 3D placed item position, rotation, or deletion with live clearance validation. |
 | `POST` | `/api/projects/{id}/edit` | Applies conversational delta-edit (e.g. *"Make cabinets sage green"*), increments version. |
 | `GET` | `/api/projects/{id}/versions` | Retrieves historical design versions for comparison. |
 | `GET` | `/api/projects/{id}/export-boq` | Exports BOQ as downloadable `CSV` (for Excel) or printable `HTML`. |
@@ -332,21 +343,22 @@ Open your browser at: **[http://localhost:8000](http://localhost:8000)**
 
 ## 🧪 Testing & Quality Verification
 
-Run all 22 automated unit and integration tests:
+Run all 29 automated unit and integration tests:
 ```powershell
 python -m unittest discover
 ```
 
 ### Test Coverage Highlights:
-- **`test_v2_platform.py`**:
+- **`test_v2_platform.py` (20 Tests)**:
   - `TestSpatialIntelligence`: Spatial model fallback, dimension bounds, opening preservation rules.
   - `TestDesignStateEngine`: Non-destructive conversational edits, unmodified field preservation, version increments.
   - `TestBudgetAndBOQEngine`: Budget overrun detection, value-engineering trade-offs, CSV and printable HTML exports.
   - `TestRegulatoryRAG`: IRC / NEC citation retrieval for US, NBC 2016 retrieval for India.
   - `TestTimelineDAG`: Task prerequisite chains and critical-path validation.
   - `TestCriticAndRiskEngines`: Automated critic approval, blocker detection, and risk matrix scores.
-  - `TestFastAPIRestGateway`: End-to-end endpoint tests (`/api/health`, `/api/projects`, `/api/projects/{id}/edit`, `/api/projects/{id}/export-boq`).
-- **`test_agent.py`**:
+  - `TestProductCatalogAnd3DLayout`: Regional product catalog filtering, physical collision & clearance validation, 3D placement and BOQ cart synchronization.
+  - `TestFastAPIRestGateway`: End-to-end endpoint tests (`/api/health`, `/api/projects`, `/api/projects/{id}/location`, `/api/projects/{id}/camera-scan`, `/api/projects/{id}/edit`, `/api/projects/{id}/export-boq`).
+- **`test_agent.py` (9 Tests)**:
   - Google ADK agent hierarchy, root agent loader discovery, tool export checks.
 
 ---

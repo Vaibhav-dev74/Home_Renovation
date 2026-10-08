@@ -379,6 +379,55 @@ class TestProductCatalogAnd3DSpatialPlanner(unittest.TestCase):
         non_res = self.client.post("/api/projects/proj-fake-9999/camera-scan", json={"image_data": sample_img})
         self.assertEqual(non_res.status_code, 404)
 
+    def test_location_change_endpoint(self):
+        # 1. Create initial project in Austin, TX
+        p_res = self.client.post("/api/projects", json={
+            "name": "Location Switcher Test",
+            "room_type": "kitchen",
+            "scope": "moderate",
+            "square_footage": 180,
+            "location": "Austin, TX",
+            "currency": "USD",
+            "target_budget": 35000.0,
+            "style": "modern",
+        })
+        self.assertEqual(p_res.status_code, 200)
+        pid = p_res.json()["project"]["project_id"]
+        self.assertEqual(p_res.json()["project"]["currency"], "USD")
+
+        # 2. Update location to Mumbai, India with auto-currency adaptation
+        loc_res = self.client.post(f"/api/projects/{pid}/location", json={
+            "location": "Mumbai, India",
+            "auto_adapt_currency": True,
+        })
+        self.assertEqual(loc_res.status_code, 200)
+        loc_data = loc_res.json()
+        self.assertTrue(loc_data["success"])
+        self.assertEqual(loc_data["project"]["location"], "Mumbai, India")
+        self.assertEqual(loc_data["project"]["currency"], "INR")
+        self.assertIn("NBC 2016", loc_data["primary_code_standard"])
+        self.assertIn("India", loc_data["jurisdiction"])
+        self.assertGreater(loc_data["project"]["target_budget"], 35000.0)
+
+        # 3. Update location to Seattle, WA with explicit currency
+        loc2_res = self.client.post(f"/api/projects/{pid}/location", json={
+            "location": "Seattle, WA",
+            "currency": "USD",
+        })
+        self.assertEqual(loc2_res.status_code, 200)
+        loc2_data = loc2_res.json()
+        self.assertEqual(loc2_data["project"]["location"], "Seattle, WA")
+        self.assertEqual(loc2_data["project"]["currency"], "USD")
+        self.assertIn("IRC", loc2_data["primary_code_standard"])
+
+        # 4. Error handling: empty location
+        err_res = self.client.post(f"/api/projects/{pid}/location", json={"location": ""})
+        self.assertEqual(err_res.status_code, 400)
+
+        # 5. Error handling: non-existent project
+        non_res = self.client.post("/api/projects/proj-fake-location/location", json={"location": "London, UK"})
+        self.assertEqual(non_res.status_code, 404)
+
 
 if __name__ == "__main__":
     unittest.main()

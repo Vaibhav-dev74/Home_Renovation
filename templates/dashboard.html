@@ -3,36 +3,47 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AI Home Renovation Studio - 3D Spatial Planner & Marketplace</title>
+  <title>RenovateAI Studio 3D — Spatial Renovation & Live Marketplace</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
   <!-- Three.js & OrbitControls for 3D/VR Spatial Room Studio -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
   <style>
     :root {
-      --bg: #070b14;
-      --sidebar: #0d1322;
-      --card-bg: rgba(19, 27, 46, 0.75);
+      --bg: #080c16;
+      --sidebar: #0e1424;
+      --card-bg: rgba(16, 24, 42, 0.75);
       --card-border: rgba(255, 255, 255, 0.08);
+      --card-hover-border: rgba(59, 130, 246, 0.35);
       --primary: #3b82f6;
       --primary-hover: #2563eb;
+      --primary-subtle: rgba(59, 130, 246, 0.12);
       --accent: #10b981;
+      --accent-hover: #059669;
+      --accent-subtle: rgba(16, 185, 129, 0.12);
       --warning: #f59e0b;
+      --warning-subtle: rgba(245, 158, 11, 0.12);
       --danger: #ef4444;
+      --danger-subtle: rgba(239, 68, 68, 0.12);
       --text: #f8fafc;
       --text-muted: #94a3b8;
-      --surface: #141e33;
-      --surface-light: #202d4a;
-      --radius: 12px;
+      --text-dim: #64748b;
+      --surface: #131c31;
+      --surface-light: #1e2a47;
+      --radius: 14px;
       --radius-sm: 8px;
+      --radius-md: 10px;
+      --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.25);
+      --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.35);
+      --shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.5);
     }
 
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
-      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
       background-color: var(--bg);
       color: var(--text);
       min-height: 100vh;
@@ -40,234 +51,429 @@
       flex-direction: column;
       overflow-x: hidden;
       background-image: 
-        radial-gradient(circle at 10% 10%, rgba(59, 130, 246, 0.08) 0%, transparent 40%),
-        radial-gradient(circle at 90% 90%, rgba(16, 185, 129, 0.06) 0%, transparent 45%);
+        radial-gradient(circle at 12% 15%, rgba(59, 130, 246, 0.07) 0%, transparent 45%),
+        radial-gradient(circle at 88% 85%, rgba(16, 185, 129, 0.05) 0%, transparent 50%);
       background-attachment: fixed;
+      -webkit-font-smoothing: antialiased;
     }
+
+    /* Custom Sleek Scrollbar */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.2); }
+    ::-webkit-scrollbar-thumb { background: #263352; border-radius: 9999px; }
+    ::-webkit-scrollbar-thumb:hover { background: #3b82f6; }
 
     /* Top Navigation Header */
     header {
-      backdrop-filter: blur(16px);
-      background: rgba(13, 19, 34, 0.9);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      background: rgba(14, 20, 36, 0.88);
       border-bottom: 1px solid var(--card-border);
       position: sticky;
       top: 0;
       z-index: 50;
-      padding: 0.85rem 1.75rem;
+      padding: 0.75rem 1.75rem;
       display: flex;
       align-items: center;
       justify-content: space-between;
+      gap: 1rem;
     }
 
-    .brand {
+    .brand-wrap {
       display: flex;
       align-items: center;
       gap: 0.75rem;
-      font-weight: 700;
-      font-size: 1.15rem;
-      letter-spacing: -0.02em;
+      text-decoration: none;
+      color: inherit;
     }
-    .brand-badge {
-      font-size: 0.7rem;
+    .brand-icon-box {
+      width: 36px;
+      height: 36px;
+      border-radius: var(--radius-sm);
+      background: linear-gradient(135deg, #2563eb, #10b981);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.15rem;
+      box-shadow: 0 4px 12px rgba(37, 99, 235, 0.35);
+    }
+    .brand-title {
+      font-weight: 800;
+      font-size: 1.12rem;
+      letter-spacing: -0.025em;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+    .brand-title span.highlight {
+      background: linear-gradient(135deg, #60a5fa, #34d399);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .brand-tag {
+      font-size: 0.68rem;
       font-weight: 600;
-      background: rgba(59, 130, 246, 0.15);
+      background: var(--primary-subtle);
       color: #60a5fa;
-      border: 1px solid rgba(59, 130, 246, 0.3);
-      padding: 2px 8px;
-      border-radius: 9999px;
+      border: 1px solid rgba(59, 130, 246, 0.25);
+      padding: 2px 7px;
+      border-radius: 6px;
+      letter-spacing: 0.02em;
     }
 
     .header-actions {
       display: flex;
       align-items: center;
-      gap: 1rem;
+      gap: 0.75rem;
+      flex-wrap: wrap;
     }
 
+    /* Location Pill */
     .location-pill {
       display: flex;
       align-items: center;
-      gap: 0.4rem;
+      gap: 0.45rem;
       font-size: 0.8rem;
       font-weight: 600;
-      background: rgba(16, 185, 129, 0.12);
+      background: var(--accent-subtle);
       color: #34d399;
       border: 1px solid rgba(16, 185, 129, 0.25);
-      padding: 5px 12px;
+      padding: 6px 12px;
       border-radius: 9999px;
+      cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      user-select: none;
+    }
+    .location-pill:hover {
+      background: rgba(16, 185, 129, 0.2);
+      border-color: #34d399;
+      transform: translateY(-1px);
     }
 
+    /* Project Switcher Select */
+    .project-switcher {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+    .project-select-input {
+      background: var(--surface);
+      border: 1px solid var(--card-border);
+      color: var(--text);
+      font-size: 0.82rem;
+      font-weight: 600;
+      padding: 6px 14px;
+      border-radius: var(--radius-sm);
+      outline: none;
+      min-width: 210px;
+      max-width: 260px;
+      transition: all 0.2s;
+      cursor: pointer;
+    }
+    .project-select-input:hover, .project-select-input:focus {
+      border-color: var(--primary);
+      background: var(--surface-light);
+    }
+
+    /* Global Buttons */
     .btn {
-      padding: 0.55rem 1.1rem;
+      padding: 0.5rem 1rem;
       border-radius: var(--radius-sm);
       font-weight: 600;
-      font-size: 0.85rem;
+      font-size: 0.82rem;
       cursor: pointer;
       border: none;
-      transition: all 0.2s;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
       display: inline-flex;
       align-items: center;
+      justify-content: center;
       gap: 0.45rem;
       text-decoration: none;
+      white-space: nowrap;
+      user-select: none;
     }
-    .btn-primary { background: var(--primary); color: white; }
-    .btn-primary:hover { background: var(--primary-hover); transform: translateY(-1px); }
+    .btn-primary {
+      background: linear-gradient(135deg, #3b82f6, #2563eb);
+      color: white;
+      box-shadow: 0 4px 14px rgba(37, 99, 235, 0.3);
+    }
+    .btn-primary:hover {
+      background: linear-gradient(135deg, #2563eb, #1d4ed8);
+      transform: translateY(-1px);
+      box-shadow: 0 6px 18px rgba(37, 99, 235, 0.45);
+    }
     .btn-secondary {
       background: var(--surface-light);
       color: var(--text);
       border: 1px solid var(--card-border);
     }
-    .btn-secondary:hover { background: rgba(255, 255, 255, 0.1); }
-    .btn-accent { background: var(--accent); color: white; }
-    .btn-accent:hover { background: #059669; }
-    .btn-danger {
-      background: rgba(239, 68, 68, 0.2);
-      color: #f87171;
-      border: 1px solid rgba(239, 68, 68, 0.4);
+    .btn-secondary:hover {
+      background: rgba(255, 255, 255, 0.12);
+      border-color: rgba(255, 255, 255, 0.2);
+      transform: translateY(-1px);
     }
-    .btn-danger:hover { background: rgba(239, 68, 68, 0.4); }
-    .btn-sm { padding: 0.35rem 0.75rem; font-size: 0.78rem; }
+    .btn-accent {
+      background: linear-gradient(135deg, #10b981, #059669);
+      color: white;
+      box-shadow: 0 4px 14px rgba(16, 185, 129, 0.25);
+    }
+    .btn-accent:hover {
+      background: linear-gradient(135deg, #059669, #047857);
+      transform: translateY(-1px);
+    }
+    .btn-danger {
+      background: var(--danger-subtle);
+      color: #f87171;
+      border: 1px solid rgba(239, 68, 68, 0.35);
+    }
+    .btn-danger:hover {
+      background: rgba(239, 68, 68, 0.25);
+      border-color: #ef4444;
+    }
+    .btn-sm { padding: 0.35rem 0.75rem; font-size: 0.76rem; border-radius: 6px; }
 
-    /* Layout Frame */
+    /* App Frame */
     .app-frame {
       display: flex;
       flex: 1;
-      height: calc(100vh - 65px);
+      height: calc(100vh - 61px);
       overflow: hidden;
     }
 
     /* Sidebar Navigation */
     .sidebar {
-      width: 250px;
+      width: 240px;
       background: var(--sidebar);
       border-right: 1px solid var(--card-border);
       display: flex;
       flex-direction: column;
       padding: 1.25rem 0.75rem;
-      gap: 0.4rem;
+      gap: 0.35rem;
       flex-shrink: 0;
+      justify-content: space-between;
     }
 
     .nav-label {
-      font-size: 0.7rem;
+      font-size: 0.68rem;
       font-weight: 700;
       text-transform: uppercase;
-      letter-spacing: 0.05em;
-      color: var(--text-muted);
-      margin: 0.75rem 0 0.35rem 0.65rem;
+      letter-spacing: 0.08em;
+      color: var(--text-dim);
+      margin: 0.6rem 0 0.3rem 0.65rem;
     }
 
     .nav-item {
       display: flex;
       align-items: center;
-      gap: 0.75rem;
+      gap: 0.7rem;
       padding: 0.65rem 0.85rem;
       border-radius: var(--radius-sm);
       color: var(--text-muted);
-      font-size: 0.88rem;
+      font-size: 0.85rem;
       font-weight: 600;
       cursor: pointer;
-      transition: all 0.2s;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      user-select: none;
     }
-    .nav-item:hover { color: var(--text); background: rgba(255, 255, 255, 0.04); }
-    .nav-item.active { color: white; background: var(--primary); }
+    .nav-item:hover {
+      color: var(--text);
+      background: rgba(255, 255, 255, 0.05);
+    }
+    .nav-item.active {
+      color: white;
+      background: linear-gradient(135deg, rgba(59, 130, 246, 0.9), rgba(37, 99, 235, 0.9));
+      box-shadow: 0 4px 14px rgba(37, 99, 235, 0.35);
+    }
     .nav-badge {
       margin-left: auto;
       font-size: 0.7rem;
-      padding: 2px 6px;
+      font-weight: 700;
+      padding: 2px 7px;
       border-radius: 9999px;
-      background: rgba(255, 255, 255, 0.15);
+      background: rgba(255, 255, 255, 0.16);
+    }
+
+    /* Sidebar Mini Project Summary Card */
+    .sidebar-footer-card {
+      background: rgba(19, 28, 49, 0.8);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius-sm);
+      padding: 0.85rem;
+      margin-top: auto;
+    }
+    .sidebar-footer-title {
+      font-size: 0.72rem;
+      text-transform: uppercase;
+      font-weight: 700;
+      color: var(--text-dim);
+      margin-bottom: 0.3rem;
+    }
+    .sidebar-footer-text {
+      font-size: 0.8rem;
+      font-weight: 700;
+      color: #60a5fa;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
     }
 
     /* Main Viewport */
     .main-viewport {
       flex: 1;
       overflow-y: auto;
-      padding: 1.5rem;
+      padding: 1.5rem 1.75rem;
+      display: flex;
+      flex-direction: column;
+      gap: 1.25rem;
     }
 
     .tab-content { display: none; }
-    .tab-content.active { display: block; animation: fadeIn 0.2s ease-in-out; }
+    .tab-content.active { display: block; animation: fadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1); }
 
     @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(4px); }
+      from { opacity: 0; transform: translateY(6px); }
       to { opacity: 1; transform: translateY(0); }
     }
 
-    /* Top KPI Bar */
+    /* Top KPI Metric Strip */
     .kpi-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+      grid-template-columns: repeat(4, 1fr);
       gap: 1rem;
-      margin-bottom: 1.5rem;
     }
+    @media (max-width: 1024px) {
+      .kpi-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 640px) {
+      .kpi-grid { grid-template-columns: 1fr; }
+    }
+
     .kpi-card {
       background: var(--card-bg);
-      backdrop-filter: blur(12px);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
       border: 1px solid var(--card-border);
       border-radius: var(--radius);
-      padding: 1.1rem 1.25rem;
+      padding: 1rem 1.25rem;
       position: relative;
+      transition: all 0.2s;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
     }
-    .kpi-label { font-size: 0.75rem; font-weight: 600; color: var(--text-muted); text-transform: uppercase; }
-    .kpi-value { font-size: 1.65rem; font-weight: 800; margin: 0.3rem 0; letter-spacing: -0.02em; }
-    .kpi-sub { font-size: 0.75rem; color: var(--text-muted); }
+    .kpi-card:hover {
+      border-color: var(--card-hover-border);
+      transform: translateY(-2px);
+      box-shadow: var(--shadow-sm);
+    }
+    .kpi-top-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 0.35rem;
+    }
+    .kpi-label {
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+    .kpi-icon {
+      font-size: 1.1rem;
+      opacity: 0.85;
+    }
+    .kpi-value {
+      font-size: 1.5rem;
+      font-weight: 800;
+      letter-spacing: -0.03em;
+      margin-bottom: 0.2rem;
+    }
+    .kpi-sub {
+      font-size: 0.74rem;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
 
-    /* Cards */
+    /* Dashboard Cards */
     .dashboard-card {
       background: var(--card-bg);
-      backdrop-filter: blur(12px);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
       border: 1px solid var(--card-border);
       border-radius: var(--radius);
-      padding: 1.5rem;
-      margin-bottom: 1.5rem;
+      padding: 1.25rem 1.5rem;
+      margin-bottom: 1.25rem;
+      transition: all 0.2s;
     }
     .card-header {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      margin-bottom: 1.25rem;
+      margin-bottom: 1.15rem;
       border-bottom: 1px solid var(--card-border);
       padding-bottom: 0.85rem;
+      gap: 0.75rem;
+      flex-wrap: wrap;
     }
     .card-title {
-      font-size: 1.1rem;
+      font-size: 1.05rem;
       font-weight: 700;
       display: flex;
       align-items: center;
-      gap: 0.5rem;
+      gap: 0.55rem;
+      letter-spacing: -0.015em;
     }
 
-    /* 3D Room Studio */
+    /* =========================================================================
+       3D / VR STUDIO WORKSPACE (CAD-GRADE 2-COLUMN LAYOUT)
+       ========================================================================= */
+    .studio-workspace-grid {
+      display: grid;
+      grid-template-columns: 1fr 340px;
+      gap: 1.25rem;
+      align-items: start;
+    }
+    @media (max-width: 1200px) {
+      .studio-workspace-grid { grid-template-columns: 1fr; }
+    }
+
     .studio-container {
       position: relative;
       width: 100%;
-      height: 540px;
+      height: 580px;
       border-radius: var(--radius);
       overflow: hidden;
       border: 1px solid var(--card-border);
-      background: #060913;
+      background: radial-gradient(circle at center, #0e172a 0%, #060913 100%);
+      box-shadow: inset 0 0 40px rgba(0, 0, 0, 0.7);
     }
     #three-canvas {
       width: 100%;
       height: 100%;
       display: block;
+      cursor: grab;
     }
+    #three-canvas:active { cursor: grabbing; }
+
+    /* Studio Floating Glass Controls */
     .studio-toolbar {
       position: absolute;
-      top: 12px;
-      left: 12px;
+      top: 14px;
+      left: 14px;
       display: flex;
-      gap: 6px;
+      gap: 5px;
       z-index: 10;
-      background: rgba(13, 19, 34, 0.85);
-      backdrop-filter: blur(8px);
-      padding: 6px;
-      border-radius: 8px;
+      background: rgba(14, 20, 36, 0.88);
+      backdrop-filter: blur(12px);
+      padding: 5px;
+      border-radius: var(--radius-sm);
       border: 1px solid var(--card-border);
+      box-shadow: var(--shadow-md);
     }
     .studio-btn {
-      padding: 5px 11px;
-      font-size: 0.78rem;
+      padding: 5px 10px;
+      font-size: 0.75rem;
       font-weight: 600;
       background: transparent;
       border: 1px solid transparent;
@@ -277,88 +483,197 @@
       display: flex;
       align-items: center;
       gap: 5px;
+      transition: all 0.15s;
     }
     .studio-btn.active, .studio-btn:hover {
       color: white;
       background: var(--surface-light);
-      border-color: var(--card-border);
+      border-color: rgba(255, 255, 255, 0.12);
     }
     .studio-info {
       position: absolute;
-      top: 12px;
-      right: 12px;
+      top: 14px;
+      right: 14px;
       z-index: 10;
-      background: rgba(13, 19, 34, 0.85);
-      backdrop-filter: blur(8px);
-      padding: 6px 14px;
-      border-radius: 8px;
+      background: rgba(14, 20, 36, 0.88);
+      backdrop-filter: blur(12px);
+      padding: 5px 12px;
+      border-radius: var(--radius-sm);
       border: 1px solid var(--card-border);
-      font-size: 0.78rem;
-      font-weight: 600;
+      font-size: 0.75rem;
+      font-weight: 700;
+      font-family: 'JetBrains Mono', monospace;
       color: #60a5fa;
+      box-shadow: var(--shadow-md);
     }
     .studio-overlay-tip {
       position: absolute;
-      bottom: 12px;
-      left: 12px;
+      bottom: 14px;
+      left: 14px;
       z-index: 10;
-      background: rgba(0, 0, 0, 0.65);
+      background: rgba(14, 20, 36, 0.82);
+      backdrop-filter: blur(8px);
       padding: 6px 12px;
       border-radius: 6px;
+      border: 1px solid rgba(255, 255, 255, 0.06);
       font-size: 0.72rem;
       color: var(--text-muted);
     }
 
+    /* Right-Hand Docked Control Panel */
+    .studio-dock {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
     /* Clearance Warning Banner */
     .clearance-banner {
-      padding: 0.85rem 1.25rem;
+      padding: 0.85rem 1rem;
       border-radius: var(--radius-sm);
-      margin-top: 1rem;
-      font-size: 0.88rem;
+      font-size: 0.82rem;
       display: flex;
       align-items: flex-start;
-      gap: 0.75rem;
+      gap: 0.65rem;
+      line-height: 1.45;
+      transition: all 0.2s;
     }
     .clearance-banner.ok {
-      background: rgba(16, 185, 129, 0.12);
+      background: var(--accent-subtle);
       border: 1px solid rgba(16, 185, 129, 0.3);
       color: #34d399;
     }
     .clearance-banner.warning {
-      background: rgba(245, 158, 11, 0.12);
-      border: 1px solid rgba(245, 158, 11, 0.3);
+      background: var(--warning-subtle);
+      border: 1px solid rgba(245, 158, 11, 0.35);
       color: #fbbf24;
     }
 
-    /* Selected Item Inspector */
+    /* Object Inspector Card */
     .item-inspector {
       background: var(--surface);
       border: 1px solid var(--card-border);
-      border-radius: var(--radius-sm);
-      padding: 1.2rem;
-      margin-top: 1rem;
+      border-radius: var(--radius);
+      padding: 1.15rem;
       display: none;
+      box-shadow: var(--shadow-sm);
     }
     .inspector-header {
       display: flex;
       justify-content: space-between;
-      align-items: center;
+      align-items: flex-start;
       margin-bottom: 0.85rem;
-    }
-    .inspector-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-      gap: 1rem;
-      margin-bottom: 1rem;
-      font-size: 0.85rem;
-    }
-    .inspector-controls {
-      display: flex;
       gap: 0.5rem;
-      flex-wrap: wrap;
+    }
+    .inspector-badge {
+      font-size: 0.68rem;
+      text-transform: uppercase;
+      font-weight: 700;
+      color: #60a5fa;
+      margin-bottom: 2px;
+    }
+    .inspector-title {
+      font-size: 0.95rem;
+      font-weight: 700;
+      line-height: 1.25;
+    }
+    .inspector-retailer-tag {
+      font-size: 0.74rem;
+      color: var(--text-dim);
+    }
+    .inspector-price-tag {
+      font-size: 1.15rem;
+      font-weight: 800;
+      color: var(--text);
+      text-align: right;
     }
 
-    /* Product Marketplace */
+    .inspector-metrics {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+      background: rgba(0, 0, 0, 0.25);
+      border-radius: var(--radius-sm);
+      padding: 0.75rem;
+      margin-bottom: 0.85rem;
+      font-size: 0.78rem;
+    }
+    .inspector-metric-row {
+      display: flex;
+      justify-content: space-between;
+    }
+    .inspector-metric-label { color: var(--text-dim); }
+    .inspector-metric-val { font-family: 'JetBrains Mono', monospace; font-weight: 600; }
+
+    .inspector-controls-box {
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+    .nudge-btn-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 4px;
+    }
+
+    /* Placed Products Chips Box */
+    .placed-chips-box {
+      background: var(--surface);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius);
+      padding: 1.15rem;
+    }
+    .placed-chips-title {
+      font-size: 0.74rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--text-dim);
+      margin-bottom: 0.65rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .placed-chips-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.45rem;
+      max-height: 220px;
+      overflow-y: auto;
+    }
+    .placed-chip-item {
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius-sm);
+      padding: 0.5rem 0.75rem;
+      font-size: 0.8rem;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .placed-chip-item:hover {
+      background: rgba(59, 130, 246, 0.12);
+      border-color: rgba(59, 130, 246, 0.3);
+      transform: translateX(2px);
+    }
+    .placed-chip-name {
+      font-weight: 600;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 170px;
+    }
+    .placed-chip-price {
+      color: #60a5fa;
+      font-weight: 700;
+      font-size: 0.76rem;
+    }
+
+    /* =========================================================================
+       TAB 2: PRODUCT MARKETPLACE
+       ========================================================================= */
     .catalog-filter-bar {
       display: flex;
       gap: 0.75rem;
@@ -374,158 +689,298 @@
     .cat-pill {
       padding: 5px 12px;
       border-radius: 9999px;
-      font-size: 0.78rem;
+      font-size: 0.76rem;
       font-weight: 600;
       background: var(--surface);
       border: 1px solid var(--card-border);
       color: var(--text-muted);
       cursor: pointer;
+      transition: all 0.2s;
     }
     .cat-pill.active, .cat-pill:hover {
       background: var(--primary);
       color: white;
       border-color: var(--primary);
+      transform: translateY(-1px);
     }
     .product-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
-      gap: 1.25rem;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 1.15rem;
     }
     .product-card {
       background: var(--surface);
       border: 1px solid var(--card-border);
       border-radius: var(--radius);
-      padding: 1.25rem;
+      padding: 1.15rem;
       display: flex;
       flex-direction: column;
       justify-content: space-between;
-      transition: all 0.2s;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
     }
     .product-card:hover {
-      transform: translateY(-2px);
-      border-color: rgba(59, 130, 246, 0.4);
-      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+      transform: translateY(-3px);
+      border-color: var(--card-hover-border);
+      box-shadow: var(--shadow-md);
     }
-    .product-icon { font-size: 2rem; margin-bottom: 0.5rem; }
-    .product-name { font-size: 0.98rem; font-weight: 700; margin-bottom: 0.25rem; line-height: 1.3; }
-    .product-retailer { font-size: 0.78rem; color: #60a5fa; font-weight: 600; margin-bottom: 0.6rem; }
+    .product-icon-wrap {
+      width: 44px;
+      height: 44px;
+      border-radius: var(--radius-sm);
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--card-border);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.6rem;
+      margin-bottom: 0.75rem;
+    }
+    .product-name {
+      font-size: 0.95rem;
+      font-weight: 700;
+      margin-bottom: 0.2rem;
+      line-height: 1.3;
+    }
+    .product-retailer {
+      font-size: 0.75rem;
+      color: #60a5fa;
+      font-weight: 600;
+      margin-bottom: 0.5rem;
+    }
     .product-dim {
-      font-size: 0.78rem;
+      font-size: 0.75rem;
       font-family: 'JetBrains Mono', monospace;
       color: var(--text-muted);
-      background: rgba(0, 0, 0, 0.25);
-      padding: 4px 8px;
-      border-radius: 4px;
-      margin-bottom: 0.6rem;
+      background: rgba(0, 0, 0, 0.3);
+      padding: 5px 8px;
+      border-radius: 6px;
+      margin-bottom: 0.5rem;
+      line-height: 1.4;
     }
-    .product-loc { font-size: 0.75rem; color: #34d399; margin-bottom: 0.85rem; }
+    .product-loc {
+      font-size: 0.72rem;
+      color: #34d399;
+      font-weight: 600;
+      margin-bottom: 0.85rem;
+      display: flex;
+      align-items: center;
+      gap: 3px;
+    }
     .product-price-row {
       display: flex;
       align-items: center;
       justify-content: space-between;
       border-top: 1px solid var(--card-border);
-      padding-top: 0.85rem;
-      margin-top: 0.5rem;
+      padding-top: 0.75rem;
+      margin-top: 0.4rem;
     }
-    .product-price { font-size: 1.2rem; font-weight: 800; color: var(--text); }
+    .product-price {
+      font-size: 1.18rem;
+      font-weight: 800;
+      color: var(--text);
+    }
 
-    /* Tables */
+    /* =========================================================================
+       TAB 3: LIVE BOQ & CART
+       ========================================================================= */
+    .boq-summary-card {
+      background: linear-gradient(135deg, rgba(19, 28, 49, 0.9), rgba(13, 19, 34, 0.9));
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius);
+      padding: 1.25rem 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+    .boq-progress-bar-wrap {
+      width: 100%;
+      height: 8px;
+      background: rgba(255, 255, 255, 0.08);
+      border-radius: 9999px;
+      margin: 1rem 0;
+      overflow: hidden;
+      display: flex;
+    }
+    .boq-progress-cart { background: #3b82f6; height: 100%; transition: width 0.3s; }
+    .boq-progress-mat { background: #10b981; height: 100%; transition: width 0.3s; }
+    .boq-progress-lab { background: #f59e0b; height: 100%; transition: width 0.3s; }
+
     .data-table {
       width: 100%;
       border-collapse: collapse;
-      font-size: 0.88rem;
+      font-size: 0.82rem;
     }
     .data-table th {
       text-align: left;
-      padding: 0.75rem 1rem;
+      padding: 0.65rem 0.85rem;
       background: rgba(13, 19, 34, 0.8);
-      color: var(--text-muted);
-      font-weight: 600;
+      color: var(--text-dim);
+      font-weight: 700;
+      text-transform: uppercase;
+      font-size: 0.68rem;
+      letter-spacing: 0.05em;
       border-bottom: 1px solid var(--card-border);
     }
     .data-table td {
-      padding: 0.75rem 1rem;
+      padding: 0.65rem 0.85rem;
       border-bottom: 1px solid rgba(255, 255, 255, 0.04);
       vertical-align: middle;
     }
-
-    .badge {
-      display: inline-block;
-      font-size: 0.72rem;
-      font-weight: 600;
-      padding: 3px 8px;
-      border-radius: 9999px;
-      background: var(--surface-light);
-      color: var(--text);
+    .data-table tr:hover td {
+      background: rgba(255, 255, 255, 0.02);
     }
 
-    /* Modal */
-    .modal-overlay {
-      display: none;
-      position: fixed;
-      inset: 0;
-      background: rgba(0, 0, 0, 0.75);
-      backdrop-filter: blur(8px);
-      z-index: 100;
-      align-items: center;
-      justify-content: center;
+    /* =========================================================================
+       TAB 4: AI VISION & COPILOT
+       ========================================================================= */
+    .copilot-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 1.25rem;
     }
-    .modal-card {
-      background: var(--sidebar);
-      border: 1px solid var(--card-border);
-      border-radius: var(--radius);
-      width: 90%;
-      max-width: 600px;
-      padding: 2rem;
-      max-height: 90vh;
-      overflow-y: auto;
+    @media (max-width: 960px) {
+      .copilot-grid { grid-template-columns: 1fr; }
     }
-    .form-group { margin-bottom: 1rem; }
-    .form-group label {
-      display: block;
-      font-size: 0.8rem;
-      font-weight: 600;
-      color: var(--text-muted);
-      margin-bottom: 0.35rem;
+
+    .spec-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.65rem;
+      margin-top: 0.85rem;
     }
-    .form-control {
-      width: 100%;
-      padding: 0.65rem 0.85rem;
-      border-radius: var(--radius-sm);
+    .spec-item {
       background: var(--surface);
       border: 1px solid var(--card-border);
-      color: var(--text);
-      font-family: inherit;
-      font-size: 0.9rem;
+      border-radius: var(--radius-sm);
+      padding: 0.65rem 0.85rem;
     }
-    .form-control:focus { outline: none; border-color: var(--primary); }
+    .spec-item-label {
+      font-size: 0.68rem;
+      text-transform: uppercase;
+      font-weight: 700;
+      color: var(--text-dim);
+      margin-bottom: 2px;
+    }
+    .spec-item-val {
+      font-size: 0.82rem;
+      font-weight: 600;
+      color: var(--text);
+    }
 
     /* Chat Panel */
     .chat-panel {
       display: flex;
       flex-direction: column;
-      height: 480px;
+      height: 520px;
     }
     .chat-log {
       flex: 1;
       overflow-y: auto;
-      padding: 1rem;
+      padding: 1rem 0;
       display: flex;
       flex-direction: column;
       gap: 0.75rem;
     }
     .chat-msg {
-      max-width: 82%;
+      max-width: 84%;
       padding: 0.75rem 1rem;
       border-radius: var(--radius-sm);
-      font-size: 0.88rem;
+      font-size: 0.85rem;
       line-height: 1.5;
     }
-    .chat-msg.user { align-self: flex-end; background: var(--primary); color: white; }
+    .chat-msg.user {
+      align-self: flex-end;
+      background: linear-gradient(135deg, #3b82f6, #2563eb);
+      color: white;
+      border-bottom-right-radius: 2px;
+    }
     .chat-msg.assistant {
       align-self: flex-start;
       background: var(--surface);
       border: 1px solid var(--card-border);
+      color: var(--text);
+      border-bottom-left-radius: 2px;
+    }
+
+    /* Copilot Quick Suggestion Chips */
+    .chat-prompts-bar {
+      display: flex;
+      gap: 0.4rem;
+      overflow-x: auto;
+      padding: 0.5rem 0;
+    }
+    .chat-prompt-pill {
+      white-space: nowrap;
+      font-size: 0.74rem;
+      font-weight: 600;
+      background: var(--surface);
+      border: 1px solid var(--card-border);
+      color: var(--text-muted);
+      padding: 4px 10px;
+      border-radius: 9999px;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .chat-prompt-pill:hover {
+      background: var(--primary-subtle);
+      color: #60a5fa;
+      border-color: rgba(59, 130, 246, 0.35);
+    }
+
+    /* Modals */
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(4, 7, 15, 0.82);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      z-index: 100;
+      align-items: center;
+      justify-content: center;
+      animation: modalFadeIn 0.2s ease-out;
+    }
+    @keyframes modalFadeIn {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+    .modal-card {
+      background: var(--sidebar);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius);
+      width: 92%;
+      max-width: 600px;
+      padding: 1.75rem;
+      max-height: 90vh;
+      overflow-y: auto;
+      box-shadow: var(--shadow-lg);
+    }
+    .form-group { margin-bottom: 0.95rem; }
+    .form-group label {
+      display: block;
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: var(--text-muted);
+      margin-bottom: 0.35rem;
+    }
+    .form-control {
+      width: 100%;
+      padding: 0.6rem 0.85rem;
+      border-radius: var(--radius-sm);
+      background: var(--surface);
+      border: 1px solid var(--card-border);
+      color: var(--text);
+      font-family: inherit;
+      font-size: 0.88rem;
+      transition: all 0.15s;
+    }
+    .form-control:focus { outline: none; border-color: var(--primary); background: var(--surface-light); }
+
+    .badge {
+      display: inline-block;
+      font-size: 0.7rem;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 9999px;
+      background: var(--surface-light);
       color: var(--text);
     }
 
@@ -540,77 +995,121 @@
 
   <!-- Top Navigation Header -->
   <header>
-    <div class="brand">
-      <span style="font-size: 1.4rem;">🏠</span>
-      <span>RenovateStudio 3D</span>
-      <span class="brand-badge">Spatial VR & Live Marketplace</span>
+    <div class="brand-wrap">
+      <div class="brand-icon-box">🏠</div>
+      <div class="brand-title">
+        <span>Renovate<span class="highlight">Studio</span></span>
+        <span class="brand-tag">3D VR</span>
+      </div>
     </div>
 
     <div class="header-actions">
-      <div class="location-pill" id="header-location-pill">
+      <!-- Location Switcher Pill -->
+      <div class="location-pill" id="header-location-pill" onclick="openLocationModal()" title="Click to change location or auto-detect with GPS">
         <span>📍</span>
         <span id="header-location-text">Bengaluru, India</span>
+        <span style="font-size: 0.7rem; opacity: 0.8; margin-left: 2px;">✏️</span>
       </div>
-      <select id="project-selector" class="form-control" style="width: 250px;" onchange="loadSelectedProject(this.value)">
-        <option value="">Loading Projects...</option>
-      </select>
-      <button class="btn btn-secondary" onclick="openCameraModal('project')" title="Scan room directly with webcam or phone camera">📸 Camera Scan</button>
-      <button class="btn btn-primary" onclick="openNewProjectModal()">✨ New Project</button>
+
+      <!-- Project Selector Dropdown -->
+      <div class="project-switcher">
+        <select id="project-selector" class="project-select-input" onchange="loadSelectedProject(this.value)">
+          <option value="">Loading Projects...</option>
+        </select>
+      </div>
+
+      <!-- Action Buttons -->
+      <button class="btn btn-secondary btn-sm" onclick="openCameraModal('project')" title="Scan room directly with webcam or phone camera">
+        📸 Live Camera
+      </button>
+      <button class="btn btn-primary btn-sm" onclick="openNewProjectModal()">
+        ✨ New Project
+      </button>
     </div>
   </header>
 
   <!-- App Layout Frame -->
   <div class="app-frame">
-    <!-- Streamlined 4-Pillar Sidebar -->
+    <!-- Streamlined Sidebar -->
     <nav class="sidebar">
-      <div class="nav-label">Core Renovation Studio</div>
-      <div class="nav-item active" onclick="switchTab('studio3d', this)">
-        <span>🎮</span>
-        <span>3D / VR Room Studio</span>
-      </div>
-      <div class="nav-item" onclick="switchTab('marketplace', this)">
-        <span>🛒</span>
-        <span>Product Marketplace</span>
-        <span class="nav-badge" id="nav-catalog-count">12</span>
-      </div>
-      <div class="nav-item" onclick="switchTab('boq-cart', this)">
-        <span>🧾</span>
-        <span>Live BOQ & Cart</span>
-        <span class="nav-badge" id="nav-cart-count">0</span>
-      </div>
-      <div class="nav-item" onclick="switchTab('ai-copilot', this)">
-        <span>🤖</span>
-        <span>AI Vision & Copilot</span>
+      <div>
+        <div class="nav-label">Studio Workspaces</div>
+        <div class="nav-item active" onclick="switchTab('studio3d', this)">
+          <span>🎮</span>
+          <span>3D / VR Room Studio</span>
+        </div>
+        <div class="nav-item" onclick="switchTab('marketplace', this)">
+          <span>🛒</span>
+          <span>Product Marketplace</span>
+          <span class="nav-badge" id="nav-catalog-count">12</span>
+        </div>
+        <div class="nav-item" onclick="switchTab('boq-cart', this)">
+          <span>🧾</span>
+          <span>Live BOQ & Cart</span>
+          <span class="nav-badge" id="nav-cart-count">0</span>
+        </div>
+        <div class="nav-item" onclick="switchTab('ai-copilot', this)">
+          <span>🤖</span>
+          <span>AI Vision & Copilot</span>
+        </div>
+
+        <div class="nav-label" style="margin-top: 1.5rem;">Project Exports</div>
+        <div style="display: flex; flex-direction: column; gap: 0.4rem; padding: 0 0.4rem;">
+          <button class="btn btn-secondary btn-sm" onclick="exportBOQ('csv')" style="justify-content: flex-start;">
+            📥 Export CSV (Excel)
+          </button>
+          <button class="btn btn-secondary btn-sm" onclick="exportBOQ('html')" style="justify-content: flex-start;">
+            🖨️ Printable BOQ PDF
+          </button>
+        </div>
       </div>
 
-      <div class="nav-label" style="margin-top: 1.5rem;">Export Tools</div>
-      <button class="btn btn-secondary btn-sm" style="margin-bottom: 0.5rem;" onclick="exportBOQ('csv')">📥 Export CSV</button>
-      <button class="btn btn-secondary btn-sm" onclick="exportBOQ('html')">🖨️ Printable BOQ</button>
+      <!-- Active Project Mini Card in Sidebar Footer -->
+      <div class="sidebar-footer-card">
+        <div class="sidebar-footer-title">Active Project Scope</div>
+        <div class="sidebar-footer-text" id="sidebar-proj-name">Kitchen Renovation</div>
+        <div style="font-size: 0.72rem; color: var(--text-dim); margin-top: 2px;" id="sidebar-proj-sub">Moderate • Modern Clean</div>
+      </div>
     </nav>
 
     <!-- Main Viewport -->
     <main class="main-viewport">
       
-      <!-- Top KPIs -->
+      <!-- Top KPI Metrics Strip -->
       <div class="kpi-grid">
         <div class="kpi-card">
-          <div class="kpi-label">Target Budget</div>
+          <div class="kpi-top-row">
+            <span class="kpi-label">Target Budget</span>
+            <span class="kpi-icon">💰</span>
+          </div>
           <div class="kpi-value" id="kpi-budget">₹8,00,000</div>
           <div class="kpi-sub" id="kpi-currency">INR Envelope</div>
         </div>
+
         <div class="kpi-card">
-          <div class="kpi-label">Placed Products Cart</div>
+          <div class="kpi-top-row">
+            <span class="kpi-label">Placed Products Cart</span>
+            <span class="kpi-icon">🛒</span>
+          </div>
           <div class="kpi-value" id="kpi-placed-cost" style="color: #60a5fa;">₹0</div>
           <div class="kpi-sub" id="kpi-placed-count">0 items placed in 3D</div>
         </div>
+
         <div class="kpi-card">
-          <div class="kpi-label">Room Dimensions</div>
+          <div class="kpi-top-row">
+            <span class="kpi-label">Room Dimensions</span>
+            <span class="kpi-icon">📐</span>
+          </div>
           <div class="kpi-value" id="kpi-room-dims">12.0' × 15.0'</div>
           <div class="kpi-sub" id="kpi-room-sqft">180 sq ft footprint</div>
         </div>
+
         <div class="kpi-card">
-          <div class="kpi-label">Spatial Clearance Status</div>
-          <div class="kpi-value" id="kpi-clearance-status" style="color: #34d399; font-size: 1.35rem;">VERIFIED</div>
+          <div class="kpi-top-row">
+            <span class="kpi-label">Aisle Clearances</span>
+            <span class="kpi-icon">🛡️</span>
+          </div>
+          <div class="kpi-value" id="kpi-clearance-status" style="color: #34d399; font-size: 1.25rem;">VERIFIED</div>
           <div class="kpi-sub" id="kpi-clearance-sub">Walkways ≥ 36 inches</div>
         </div>
       </div>
@@ -623,78 +1122,101 @@
           <div class="card-header">
             <div class="card-title">
               <span>🎮</span>
-              <span>Interactive 3D / VR Room Planner</span>
+              <span>Interactive 3D Spatial Room Planner</span>
             </div>
-            <div style="display: flex; gap: 0.5rem;">
+            <div style="display: flex; gap: 0.5rem; align-items: center;">
+              <button class="btn btn-secondary btn-sm" onclick="openCameraModal('project')">
+                📸 Scan Room Camera
+              </button>
               <button class="btn btn-accent btn-sm" onclick="switchTab('marketplace', document.querySelectorAll('.nav-item')[1])">
                 ➕ Add Products from Store
               </button>
             </div>
           </div>
 
-          <!-- Studio 3D Canvas Box -->
-          <div class="studio-container" id="studio-box">
-            <div class="studio-toolbar">
-              <button class="studio-btn active" id="btn-view-orbit" onclick="setCameraMode('orbit')">🎮 3D Orbit View</button>
-              <button class="studio-btn" id="btn-view-plan" onclick="setCameraMode('plan')">📐 Top-Down 2D</button>
-              <button class="studio-btn" id="btn-view-vr" onclick="setCameraMode('vr')">🕶️ First-Person Walk (VR)</button>
-              <button class="studio-btn" onclick="openCameraModal('project')" style="color: #60a5fa;" title="Scan room with webcam or phone camera">📸 Live Room Camera</button>
-              <button class="studio-btn" onclick="resetStudioCamera()">🔄 Reset</button>
-            </div>
-            <div class="studio-info" id="studio-room-pill">12.0 ft W × 15.0 ft L × 9.0 ft H</div>
-            <div class="studio-overlay-tip">💡 Click any item in the room to select, rotate, or move. Drag with mouse to orbit.</div>
-            <canvas id="three-canvas"></canvas>
-          </div>
-
-          <!-- Real-Time Clearance Banner -->
-          <div id="clearance-banner" class="clearance-banner ok">
-            <span style="font-size: 1.2rem;">✅</span>
-            <div id="clearance-banner-text">
-              <strong>Spatial Clearance Verified:</strong> All placed items fit within the room boundaries and maintain standard 36-42 inch walkways.
-            </div>
-          </div>
-
-          <!-- Selected Item Inspector HUD -->
-          <div class="item-inspector" id="item-inspector">
-            <div class="inspector-header">
-              <div>
-                <span style="font-size: 0.75rem; color: var(--text-muted); text-transform: uppercase;">SELECTED OBJECT</span>
-                <h3 id="inspector-name" style="margin-top: 2px;">IKEA SEKTION Island</h3>
-                <span id="inspector-retailer" style="color: #60a5fa; font-size: 0.8rem;">IKEA</span>
+          <!-- Professional 2-Column CAD Studio Workspace -->
+          <div class="studio-workspace-grid">
+            
+            <!-- Left: 3D Interactive Canvas -->
+            <div class="studio-container" id="studio-box">
+              <div class="studio-toolbar">
+                <button class="studio-btn active" id="btn-view-orbit" onclick="setCameraMode('orbit')" title="Orbit Camera">🎮 3D Orbit</button>
+                <button class="studio-btn" id="btn-view-plan" onclick="setCameraMode('plan')" title="Top-Down Plan">📐 Top-Down</button>
+                <button class="studio-btn" id="btn-view-vr" onclick="setCameraMode('vr')" title="First-Person VR View">🕶️ VR Walk</button>
+                <button class="studio-btn" onclick="resetStudioCamera()" title="Reset Perspective">🔄 Reset</button>
               </div>
-              <div style="text-align: right;">
-                <div id="inspector-price" style="font-size: 1.3rem; font-weight: 800;">₹48,500</div>
-                <button class="btn btn-danger btn-sm" onclick="deleteSelectedItem()">🗑️ Remove from Room</button>
-              </div>
-            </div>
-            <div class="inspector-grid">
-              <div>
-                <span style="color: var(--text-muted);">Physical Dimensions:</span>
-                <div id="inspector-dims" style="font-weight: 600; font-family: monospace;">72" W × 36" D × 36" H (6.0 × 3.0 × 3.0 ft)</div>
-              </div>
-              <div>
-                <span style="color: var(--text-muted);">Floor Coordinates:</span>
-                <div id="inspector-pos" style="font-weight: 600; font-family: monospace;">X: 0.0 ft, Z: 0.0 ft (Rot: 0°)</div>
-              </div>
-            </div>
-            <div class="inspector-controls">
-              <span style="font-size: 0.8rem; font-weight: 600; align-self: center; margin-right: 4px;">Nudge Position:</span>
-              <button class="btn btn-secondary btn-sm" onclick="nudgeSelectedItem(-0.5, 0)">⬅️ Left (-0.5ft)</button>
-              <button class="btn btn-secondary btn-sm" onclick="nudgeSelectedItem(0.5, 0)">➡️ Right (+0.5ft)</button>
-              <button class="btn btn-secondary btn-sm" onclick="nudgeSelectedItem(0, -0.5)">⬆️ Forward (+0.5ft)</button>
-              <button class="btn btn-secondary btn-sm" onclick="nudgeSelectedItem(0, 0.5)">⬇️ Backward (-0.5ft)</button>
-              <button class="btn btn-secondary btn-sm" onclick="rotateSelectedItem(90)">↻ Rotate 90°</button>
-            </div>
-          </div>
 
-          <!-- Placed Items Chips List -->
-          <div style="margin-top: 1.25rem;">
-            <h4 style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.6rem; text-transform: uppercase;">Placed Products In Room:</h4>
-            <div id="placed-items-chips" style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
-              <span style="color: var(--text-muted); font-size: 0.85rem;">No items placed yet. Click "➕ Add Products from Store" above to begin!</span>
+              <div class="studio-info" id="studio-room-pill">12.0 ft W × 15.0 ft L × 9.0 ft H</div>
+              <div class="studio-overlay-tip">💡 Click any item to inspect, move, or rotate. Drag canvas to orbit room.</div>
+              <canvas id="three-canvas"></canvas>
             </div>
-          </div>
 
+            <!-- Right: Docked Studio Control Panel -->
+            <div class="studio-dock">
+              
+              <!-- Real-Time Clearance Status -->
+              <div id="clearance-banner" class="clearance-banner ok">
+                <span style="font-size: 1.15rem;">✅</span>
+                <div id="clearance-banner-text">
+                  <strong>Clearances Code Compliant:</strong> All placed items fit within boundaries with ≥36" walkways.
+                </div>
+              </div>
+
+              <!-- Selected Object Inspector -->
+              <div class="item-inspector" id="item-inspector">
+                <div class="inspector-header">
+                  <div>
+                    <div class="inspector-badge">Selected Object</div>
+                    <div class="inspector-title" id="inspector-name">IKEA SEKTION Island</div>
+                    <div class="inspector-retailer-tag" id="inspector-retailer">IKEA • Bengaluru, India</div>
+                  </div>
+                  <div>
+                    <div class="inspector-price-tag" id="inspector-price">₹48,500</div>
+                  </div>
+                </div>
+
+                <div class="inspector-metrics">
+                  <div class="inspector-metric-row">
+                    <span class="inspector-metric-label">Dimensions:</span>
+                    <span class="inspector-metric-val" id="inspector-dims">72"W × 36"D × 36"H</span>
+                  </div>
+                  <div class="inspector-metric-row">
+                    <span class="inspector-metric-label">Floor Coords:</span>
+                    <span class="inspector-metric-val" id="inspector-pos">X: 0.0 ft, Z: 0.0 ft (0°)</span>
+                  </div>
+                </div>
+
+                <div class="inspector-controls-box">
+                  <div style="font-size: 0.72rem; font-weight: 700; color: var(--text-dim); text-transform: uppercase;">Position Fine-Tune:</div>
+                  <div class="nudge-btn-grid">
+                    <button class="btn btn-secondary btn-sm" onclick="nudgeSelectedItem(-0.5, 0)" title="Nudge Left">⬅️ Left</button>
+                    <button class="btn btn-secondary btn-sm" onclick="nudgeSelectedItem(0.5, 0)" title="Nudge Right">➡️ Right</button>
+                    <button class="btn btn-secondary btn-sm" onclick="nudgeSelectedItem(0, -0.5)" title="Nudge Forward">⬆️ Fwd</button>
+                    <button class="btn btn-secondary btn-sm" onclick="nudgeSelectedItem(0, 0.5)" title="Nudge Back">⬇️ Back</button>
+                  </div>
+                  <div style="display: flex; gap: 0.5rem; margin-top: 0.25rem;">
+                    <button class="btn btn-secondary btn-sm" style="flex: 1;" onclick="rotateSelectedItem(90)">↻ Rotate 90°</button>
+                    <button class="btn btn-danger btn-sm" style="flex: 1;" onclick="deleteSelectedItem()">🗑️ Remove</button>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Placed Items Chips List -->
+              <div class="placed-chips-box">
+                <div class="placed-chips-title">
+                  <span>Placed Products in Room</span>
+                  <span id="placed-chips-count" class="badge">0 items</span>
+                </div>
+                <div id="placed-items-chips" class="placed-chips-list">
+                  <span style="color: var(--text-dim); font-size: 0.78rem; text-align: center; padding: 1rem 0;">
+                    No products placed in 3D yet.<br>Click "➕ Add Products from Store" to start!
+                  </span>
+                </div>
+              </div>
+
+            </div>
+
+          </div>
         </div>
       </div>
 
@@ -704,13 +1226,18 @@
       <div id="tab-marketplace" class="tab-content">
         <div class="dashboard-card">
           <div class="card-header">
-            <div class="card-title">
-              <span>🛒</span>
-              <span>Real-Time Renovation Marketplace</span>
+            <div>
+              <div class="card-title">
+                <span>🛒</span>
+                <span>Real-Time Renovation Marketplace</span>
+              </div>
+              <p style="font-size: 0.78rem; color: var(--text-muted); margin-top: 2px;">
+                True physical scale products available in your target location. Click "➕ Place in 3D" to add to your room.
+              </p>
             </div>
-            <div style="display: flex; align-items: center; gap: 0.6rem;">
-              <span style="font-size: 0.8rem; color: var(--text-muted);">City Availability:</span>
-              <select id="market-city-filter" class="form-control" style="width: 220px;" onchange="filterProducts()">
+            <div style="display: flex; align-items: center; gap: 0.5rem;">
+              <span style="font-size: 0.78rem; color: var(--text-dim); font-weight: 600;">Location:</span>
+              <select id="market-city-filter" class="form-control" style="width: 200px; font-size: 0.8rem; padding: 5px 8px;" onchange="filterProducts()">
                 <option value="">All Locations</option>
               </select>
             </div>
@@ -721,14 +1248,14 @@
             <div class="category-pills" id="category-pills">
               <button class="cat-pill active" onclick="setCategoryFilter('all', this)">All Categories</button>
             </div>
-            <div style="flex: 1; min-width: 200px;">
-              <input type="text" id="market-search-input" class="form-control" placeholder="Search products, brands (e.g. IKEA, Kohler, Samsung)..." oninput="filterProducts()">
+            <div style="flex: 1; min-width: 220px;">
+              <input type="text" id="market-search-input" class="form-control" placeholder="Search brands, products (e.g. IKEA island, Kohler sink)..." oninput="filterProducts()">
             </div>
           </div>
 
           <!-- Product Grid -->
           <div class="product-grid" id="product-grid">
-            <div style="color: var(--text-muted); padding: 2rem;">Loading live products...</div>
+            <div style="color: var(--text-muted); padding: 2rem; grid-column: 1/-1; text-align: center;">Loading live products...</div>
           </div>
         </div>
       </div>
@@ -739,9 +1266,14 @@
       <div id="tab-boq-cart" class="tab-content">
         <div class="dashboard-card">
           <div class="card-header">
-            <div class="card-title">
-              <span>🧾</span>
-              <span>Live Bill of Quantities (BOQ) & Cart</span>
+            <div>
+              <div class="card-title">
+                <span>🧾</span>
+                <span>Live Bill of Quantities (BOQ) & Cart</span>
+              </div>
+              <p style="font-size: 0.78rem; color: var(--text-muted); margin-top: 2px;">
+                Mathematically derived materials, contractor labor rates, and real-time 3D placed products.
+              </p>
             </div>
             <div style="display: flex; gap: 0.5rem;">
               <button class="btn btn-secondary btn-sm" onclick="exportBOQ('csv')">📥 Download CSV</button>
@@ -749,49 +1281,77 @@
             </div>
           </div>
 
-          <!-- Placed Items Cart Section -->
-          <h4 style="margin-bottom: 0.75rem; color: #60a5fa;">1. Placed Products & Fixtures (Direct from 3D Studio)</h4>
-          <table class="data-table" id="table-cart-items" style="margin-bottom: 2rem;">
-            <thead>
-              <tr>
-                <th>Product</th>
-                <th>Brand / Retailer</th>
-                <th>Physical Dimensions</th>
-                <th>Unit Price</th>
-                <th>Location Availability</th>
-                <th>Action</th>
-              </tr>
-            </thead>
-            <tbody></tbody>
-          </table>
-
-          <!-- Architectural & Construction Materials Section -->
-          <h4 style="margin-bottom: 0.75rem; color: var(--text);">2. Architectural Renovation Materials & Contractor Labor</h4>
-          <table class="data-table" id="table-boq-arch" style="margin-bottom: 1.5rem;">
-            <thead>
-              <tr>
-                <th>Item ID</th>
-                <th>Trade Category</th>
-                <th>Scope & Material Spec</th>
-                <th>Qty</th>
-                <th>Material Rate</th>
-                <th>Labor Rate</th>
-                <th>Subtotal</th>
-              </tr>
-            </thead>
-            <tbody></tbody>
-          </table>
-
-          <!-- Grand Summary Card -->
-          <div style="background: rgba(13, 19, 34, 0.8); border: 1px solid var(--card-border); border-radius: 8px; padding: 1.25rem;">
-            <div style="display: flex; justify-content: space-between; align-items: center; font-size: 1.1rem; font-weight: 700;">
-              <span>GRAND TOTAL ESTIMATE (with 10% Contingency Reserve):</span>
-              <span id="boq-grand-total" style="color: #34d399; font-size: 1.4rem;">₹0</span>
+          <!-- Financial Grand Summary Card -->
+          <div class="boq-summary-card">
+            <div style="display: flex; justify-content: space-between; align-items: baseline; flex-wrap: wrap; gap: 0.5rem;">
+              <div>
+                <span style="font-size: 0.75rem; text-transform: uppercase; font-weight: 700; color: var(--text-dim); letter-spacing: 0.05em;">ESTIMATED TOTAL RENOVATION COST</span>
+                <div id="boq-grand-total" style="color: #34d399; font-size: 1.85rem; font-weight: 800; letter-spacing: -0.03em;">₹0</div>
+              </div>
+              <div style="display: flex; gap: 1.5rem; font-size: 0.82rem;">
+                <div>
+                  <div style="color: var(--text-dim); font-size: 0.7rem;">MATERIALS</div>
+                  <strong id="boq-sub-materials" style="color: #10b981;">₹0</strong>
+                </div>
+                <div>
+                  <div style="color: var(--text-dim); font-size: 0.7rem;">LABOR</div>
+                  <strong id="boq-sub-labor" style="color: #f59e0b;">₹0</strong>
+                </div>
+                <div>
+                  <div style="color: var(--text-dim); font-size: 0.7rem;">CONTINGENCY (10%)</div>
+                  <strong id="boq-sub-contingency" style="color: #60a5fa;">₹0</strong>
+                </div>
+              </div>
             </div>
-            <div style="display: flex; justify-content: space-between; margin-top: 0.5rem; font-size: 0.85rem; color: var(--text-muted);">
-              <span id="boq-sub-materials">Materials: ₹0</span>
-              <span id="boq-sub-labor">Labor: ₹0</span>
-              <span id="boq-sub-contingency">Contingency (10%): ₹0</span>
+          </div>
+
+          <!-- Section 1: Placed Products & Fixtures -->
+          <div style="margin-bottom: 2rem;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+              <h4 style="font-size: 0.92rem; font-weight: 700; color: #60a5fa; display: flex; align-items: center; gap: 0.4rem;">
+                <span>🛒</span> 1. Placed Products & Fixtures (Direct from 3D Studio)
+              </h4>
+              <button class="btn btn-secondary btn-sm" onclick="switchTab('marketplace', document.querySelectorAll('.nav-item')[1])">
+                ➕ Browse Catalog
+              </button>
+            </div>
+            <div style="background: var(--surface); border: 1px solid var(--card-border); border-radius: var(--radius-sm); overflow: hidden;">
+              <table class="data-table" id="table-cart-items">
+                <thead>
+                  <tr>
+                    <th>Product</th>
+                    <th>Brand / Retailer</th>
+                    <th>Physical Dimensions</th>
+                    <th>Unit Price</th>
+                    <th>Availability</th>
+                    <th style="text-align: right;">Action</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- Section 2: Architectural & Trade Materials -->
+          <div>
+            <h4 style="font-size: 0.92rem; font-weight: 700; color: var(--text); margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.4rem;">
+              <span>🏗️</span> 2. Architectural Renovation Materials & Contractor Labor
+            </h4>
+            <div style="background: var(--surface); border: 1px solid var(--card-border); border-radius: var(--radius-sm); overflow: hidden;">
+              <table class="data-table" id="table-boq-arch">
+                <thead>
+                  <tr>
+                    <th>Item ID</th>
+                    <th>Trade Category</th>
+                    <th>Scope & Material Spec</th>
+                    <th>Qty</th>
+                    <th>Material Rate</th>
+                    <th>Labor Rate</th>
+                    <th style="text-align: right;">Subtotal</th>
+                  </tr>
+                </thead>
+                <tbody></tbody>
+              </table>
             </div>
           </div>
 
@@ -802,53 +1362,77 @@
       <!-- TAB 4: AI VISION & COPILOT -->
       <!-- ================================================================= -->
       <div id="tab-ai-copilot" class="tab-content">
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
+        <div class="copilot-grid">
           
-          <!-- Vision Analysis & Before/After Card -->
-          <div class="dashboard-card">
+          <!-- Vision Analysis & Architectural Brief -->
+          <div class="dashboard-card" style="margin-bottom: 0;">
             <div class="card-header">
               <div class="card-title">
                 <span>📸</span>
-                <span>Room Vision & Architectural Brief</span>
+                <span>Room Vision & Specifications</span>
               </div>
               <button class="btn btn-primary btn-sm" onclick="openCameraModal('project')">
-                📸 Live Camera Scan
+                📸 Camera Scan
               </button>
             </div>
+
+            <!-- Location & Jurisdiction Card -->
+            <div style="margin-bottom: 1rem; display: flex; align-items: center; justify-content: space-between; background: rgba(0,0,0,0.25); border: 1px solid var(--card-border); padding: 8px 12px; border-radius: var(--radius-sm); font-size: 0.8rem;">
+              <span>📍 Location & Jurisdiction: <strong id="vision-card-location" style="color: #34d399;">Bengaluru, India</strong></span>
+              <button class="btn btn-secondary btn-sm" style="padding: 2px 8px; font-size: 0.72rem;" onclick="openLocationModal()">✏️ Change</button>
+            </div>
+
+            <!-- Original Photo Preview -->
             <div style="margin-bottom: 1rem;">
-              <h4 style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.5rem;">ORIGINAL ROOM SPACE</h4>
-              <img id="img-before" src="" alt="Room Photo" style="width: 100%; max-height: 220px; object-fit: cover; border-radius: 8px; display: none;">
-              <div id="img-before-placeholder" style="background: rgba(0,0,0,0.3); border: 1px dashed var(--card-border); padding: 2rem; text-align: center; border-radius: 8px; color: var(--text-muted); font-size: 0.85rem;">
+              <div style="font-size: 0.74rem; font-weight: 700; text-transform: uppercase; color: var(--text-dim); margin-bottom: 0.45rem;">Original Room Space</div>
+              <img id="img-before" src="" alt="Room Photo" style="width: 100%; max-height: 200px; object-fit: cover; border-radius: var(--radius-sm); display: none; border: 1px solid var(--card-border);">
+              <div id="img-before-placeholder" style="background: rgba(0,0,0,0.25); border: 1px dashed var(--card-border); padding: 1.75rem; text-align: center; border-radius: var(--radius-sm); color: var(--text-muted); font-size: 0.82rem;">
                 No room photo attached to this project.<br>
-                <div style="margin-top: 0.75rem;">
+                <div style="margin-top: 0.65rem;">
                   <button class="btn btn-primary btn-sm" onclick="openCameraModal('project')">📸 Capture with Live Camera</button>
                 </div>
               </div>
             </div>
+
+            <!-- Structured Grounded Design Specification -->
             <div>
-              <h4 style="font-size: 0.85rem; color: #60a5fa; margin-bottom: 0.5rem;">GROUNDED RENDERING SPECIFICATION</h4>
-              <div id="render-brief-text" style="font-family: 'JetBrains Mono', monospace; font-size: 0.78rem; line-height: 1.5; background: rgba(0,0,0,0.3); padding: 1rem; border-radius: 8px; max-height: 180px; overflow-y: auto; color: #cbd5e1;">
+              <div style="font-size: 0.74rem; font-weight: 700; text-transform: uppercase; color: #60a5fa; margin-bottom: 0.45rem;">Grounded Design Specification</div>
+              <div id="render-brief-text" style="font-family: 'JetBrains Mono', monospace; font-size: 0.76rem; line-height: 1.5; background: rgba(0,0,0,0.25); padding: 0.85rem; border-radius: var(--radius-sm); max-height: 160px; overflow-y: auto; color: #cbd5e1; border: 1px solid var(--card-border);">
                 Brief loading...
               </div>
             </div>
           </div>
 
           <!-- Conversational AI Copilot Card -->
-          <div class="dashboard-card chat-panel">
+          <div class="dashboard-card chat-panel" style="margin-bottom: 0;">
             <div class="card-header">
               <div class="card-title">
                 <span>🤖</span>
                 <span>AI Renovation Copilot</span>
               </div>
-              <span class="badge">Gemini Powered</span>
+              <span class="badge" style="background: var(--primary-subtle); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.25);">
+                Gemini 3.6 Multimodal
+              </span>
             </div>
+
+            <!-- Chat Message Log -->
             <div class="chat-log" id="chat-box">
               <div class="chat-msg assistant">
                 Hello! I'm your AI Renovation Architect. You can ask me questions about building materials, clearances, or give instructions like <strong>"Change cabinets to sage green"</strong> or <strong>"Suggest a kitchen island that fits"</strong>.
               </div>
             </div>
-            <div style="display: flex; gap: 0.5rem; padding-top: 0.75rem;">
-              <input type="text" id="chat-input" class="form-control" placeholder="Ask a question or enter a design instruction..." onkeydown="if(event.key==='Enter') sendChatMessage()">
+
+            <!-- Quick Suggestion Prompts -->
+            <div class="chat-prompts-bar">
+              <span class="chat-prompt-pill" onclick="insertPrompt('Make cabinets sage green')">🌿 Sage green cabinets</span>
+              <span class="chat-prompt-pill" onclick="insertPrompt('Switch countertop to white quartz')">🤍 White quartz counter</span>
+              <span class="chat-prompt-pill" onclick="insertPrompt('Check regulatory permits for this room')">⚖️ Check permits</span>
+              <span class="chat-prompt-pill" onclick="insertPrompt('Suggest budget optimization')">💰 Optimize budget</span>
+            </div>
+
+            <!-- Chat Input Box -->
+            <div style="display: flex; gap: 0.5rem; padding-top: 0.5rem;">
+              <input type="text" id="chat-input" class="form-control" placeholder="Ask a question or enter a design command..." onkeydown="if(event.key==='Enter') sendChatMessage()">
               <button class="btn btn-primary" onclick="sendChatMessage()">Send</button>
             </div>
           </div>
@@ -862,12 +1446,19 @@
   <!-- New Project Modal -->
   <div id="new-project-modal" class="modal-overlay">
     <div class="modal-card">
-      <h3 style="margin-bottom: 1.25rem;">✨ Start New Renovation Project</h3>
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
+        <h3 style="display: flex; align-items: center; gap: 0.5rem; font-size: 1.15rem;">
+          <span>✨</span> Start New Renovation Project
+        </h3>
+        <button class="btn btn-secondary btn-sm" onclick="closeNewProjectModal()">✕</button>
+      </div>
+
       <div class="form-group">
         <label>Project Name</label>
         <input type="text" id="new-name" class="form-control" value="Chef's Kitchen Renovation">
       </div>
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.85rem;">
         <div class="form-group">
           <label>Room Type</label>
           <select id="new-room" class="form-control">
@@ -887,26 +1478,22 @@
           </select>
         </div>
       </div>
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.85rem;">
         <div class="form-group">
-          <label>Square Footage (sq ft)</label>
+          <label>Room Area (sq ft)</label>
           <input type="number" id="new-sqft" class="form-control" value="180">
         </div>
         <div class="form-group">
-          <label>Location / City</label>
-          <select id="new-location" class="form-control">
-            <option value="Bengaluru, India" selected>Bengaluru, India</option>
-            <option value="Mumbai, India">Mumbai, India</option>
-            <option value="Delhi NCR, India">Delhi NCR, India</option>
-            <option value="Hyderabad, India">Hyderabad, India</option>
-            <option value="Pune, India">Pune, India</option>
-            <option value="Austin, TX">Austin, TX (USA)</option>
-            <option value="San Francisco, CA">San Francisco, CA (USA)</option>
-            <option value="New York, NY">New York, NY (USA)</option>
-          </select>
+          <label style="display: flex; justify-content: space-between; align-items: center;">
+            <span>City / Jurisdiction</span>
+            <a href="javascript:void(0)" onclick="detectUserLocation('new')" style="color: #34d399; font-size: 0.72rem; text-decoration: none; font-weight: 600;" title="Detect with GPS">📍 GPS Auto-Detect</a>
+          </label>
+          <input type="text" id="new-location" class="form-control" list="location-datalist" value="Bengaluru, India" placeholder="City or address..." oninput="autoDetectCurrencyForNewProject(this.value)">
         </div>
       </div>
-      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+
+      <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.85rem;">
         <div class="form-group">
           <label>Target Budget</label>
           <input type="number" id="new-budget" class="form-control" value="800000">
@@ -919,6 +1506,7 @@
           </select>
         </div>
       </div>
+
       <div class="form-group">
         <label>Aesthetic Style</label>
         <select id="new-style" class="form-control">
@@ -928,23 +1516,25 @@
           <option value="farmhouse">Modern Farmhouse</option>
         </select>
       </div>
+
+      <!-- Room Photo Input (Live Camera vs File Upload) -->
       <div class="form-group">
-        <label>Room Photo (Live Camera or File Upload)</label>
+        <label>Room Visual Input</label>
         <div style="display: flex; gap: 0.5rem; margin-bottom: 0.5rem;">
           <button type="button" class="btn btn-sm btn-primary" id="btn-toggle-cam-mode" onclick="toggleModalPhotoInput('camera')">📸 Live Camera</button>
           <button type="button" class="btn btn-sm btn-secondary" id="btn-toggle-file-mode" onclick="toggleModalPhotoInput('file')">📁 Upload File</button>
         </div>
         
-        <div id="modal-photo-camera-sec" style="background: rgba(0,0,0,0.25); border: 1px dashed var(--card-border); border-radius: 8px; padding: 1rem; text-align: center;">
-          <div id="modal-cam-preview-box" style="position: relative; max-width: 380px; margin: 0 auto; display: none;">
+        <div id="modal-photo-camera-sec" style="background: rgba(0,0,0,0.25); border: 1px dashed var(--card-border); border-radius: var(--radius-sm); padding: 1rem; text-align: center;">
+          <div id="modal-cam-preview-box" style="position: relative; max-width: 360px; margin: 0 auto; display: none;">
             <video id="modal-cam-video" autoplay playsinline muted style="width: 100%; border-radius: 8px; aspect-ratio: 4/3; object-fit: cover; background: #000;"></video>
             <canvas id="modal-cam-canvas" style="display: none; width: 100%; border-radius: 8px; aspect-ratio: 4/3; object-fit: cover;"></canvas>
             <div id="modal-cam-hud" style="position: absolute; inset: 0; pointer-events: none; border: 2px dashed rgba(59,130,246,0.6); border-radius: 8px; display: flex; align-items: center; justify-content: center;">
-              <span style="background: rgba(0,0,0,0.6); color: #60a5fa; font-size: 0.72rem; padding: 2px 8px; border-radius: 4px;">AR Room Framing</span>
+              <span style="background: rgba(0,0,0,0.6); color: #60a5fa; font-size: 0.7rem; padding: 2px 8px; border-radius: 4px;">AR Framing Guide</span>
             </div>
           </div>
-          <div id="modal-cam-status" style="font-size: 0.8rem; color: var(--text-muted); margin-bottom: 0.5rem;">
-            Ready to use device camera. Click below to start stream.
+          <div id="modal-cam-status" style="font-size: 0.78rem; color: var(--text-muted); margin-bottom: 0.5rem;">
+            Ready to use device camera. Click below to start live stream.
           </div>
           <div style="display: flex; justify-content: center; gap: 0.5rem; flex-wrap: wrap;">
             <button type="button" class="btn btn-primary btn-sm" id="btn-modal-cam-start" onclick="startNewProjectCamera()">▶️ Start Camera</button>
@@ -960,7 +1550,8 @@
           <input type="file" id="new-image" class="form-control" accept="image/*">
         </div>
       </div>
-      <div style="display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 1.5rem;">
+
+      <div style="display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 1.25rem;">
         <button class="btn btn-secondary" onclick="closeNewProjectModal()">Cancel</button>
         <button class="btn btn-primary" id="btn-submit-project" onclick="submitNewProject()">Launch Plan</button>
       </div>
@@ -969,22 +1560,21 @@
 
   <!-- Live Camera Room Scanner Modal (For Current Project) -->
   <div id="camera-scanner-modal" class="modal-overlay">
-    <div class="modal-card" style="max-width: 740px;">
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+    <div class="modal-card" style="max-width: 720px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.85rem;">
         <div>
-          <h3 style="display: flex; align-items: center; gap: 0.5rem; margin-bottom: 0.2rem;">
-            <span>📸</span>
-            <span>Live Architectural Room Scanner</span>
+          <h3 style="display: flex; align-items: center; gap: 0.5rem; font-size: 1.15rem;">
+            <span>📸</span> Live Architectural Room Scanner
           </h3>
-          <p style="font-size: 0.82rem; color: var(--text-muted);">
-            Point your device camera at room walls and floor. AI analyzes spatial bounds and updates 3D studio geometry in real-time.
+          <p style="font-size: 0.78rem; color: var(--text-muted); margin-top: 2px;">
+            Point your device camera at room walls and floor. AI synthesizes 3D studio geometry in real-time.
           </p>
         </div>
         <button class="btn btn-secondary btn-sm" onclick="closeCameraModal()">✕ Close</button>
       </div>
 
       <!-- Video Feed & AR HUD Viewport -->
-      <div class="camera-viewport-wrap" style="position: relative; width: 100%; border-radius: 12px; overflow: hidden; background: #000; box-shadow: 0 12px 30px rgba(0,0,0,0.6); border: 1px solid var(--card-border);">
+      <div class="camera-viewport-wrap" style="position: relative; width: 100%; border-radius: var(--radius); overflow: hidden; background: #000; box-shadow: var(--shadow-lg); border: 1px solid var(--card-border);">
         <video id="live-scanner-video" playsinline autoplay muted style="width: 100%; aspect-ratio: 16/9; object-fit: cover; display: block;"></video>
         <canvas id="live-scanner-canvas" style="display: none; width: 100%; aspect-ratio: 16/9; object-fit: cover;"></canvas>
 
@@ -997,41 +1587,37 @@
               <span id="scanner-feed-badge">LIVE CAMERA ACTIVE</span>
             </div>
             <div style="background: rgba(0,0,0,0.65); backdrop-filter: blur(4px); padding: 4px 10px; border-radius: 9999px; font-size: 0.72rem; color: #60a5fa; border: 1px solid rgba(96,165,250,0.3);">
-              <span>📐 Spatial Framing Guide</span>
+              <span>📐 AR Room Framing</span>
             </div>
           </div>
 
           <!-- AR Crosshair & Grid Lines -->
           <div id="scanner-hud-lines" style="position: absolute; inset: 0; pointer-events: none;">
-            <!-- Grid Lines (Rule of Thirds) -->
             <div style="position: absolute; left: 33.33%; top: 0; bottom: 0; border-left: 1px dashed rgba(255,255,255,0.18);"></div>
             <div style="position: absolute; left: 66.66%; top: 0; bottom: 0; border-left: 1px dashed rgba(255,255,255,0.18);"></div>
             <div style="position: absolute; top: 33.33%; left: 0; right: 0; border-top: 1px dashed rgba(255,255,255,0.18);"></div>
             <div style="position: absolute; top: 66.66%; left: 0; right: 0; border-top: 1px dashed rgba(255,255,255,0.18);"></div>
-            <!-- Center Level Crosshair -->
             <div style="position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); width: 44px; height: 44px; border: 1px solid rgba(96,165,250,0.6); border-radius: 50%; display: flex; align-items: center; justify-content: center;">
               <div style="width: 8px; height: 1px; background: #60a5fa;"></div>
               <div style="height: 8px; width: 1px; background: #60a5fa; position: absolute;"></div>
             </div>
-            <!-- Corner Brackets -->
             <div style="position: absolute; top: 16px; left: 16px; width: 24px; height: 24px; border-top: 2px solid #3b82f6; border-left: 2px solid #3b82f6;"></div>
             <div style="position: absolute; top: 16px; right: 16px; width: 24px; height: 24px; border-top: 2px solid #3b82f6; border-right: 2px solid #3b82f6;"></div>
             <div style="position: absolute; bottom: 16px; left: 16px; width: 24px; height: 24px; border-bottom: 2px solid #3b82f6; border-left: 2px solid #3b82f6;"></div>
             <div style="position: absolute; bottom: 16px; right: 16px; width: 24px; height: 24px; border-bottom: 2px solid #3b82f6; border-right: 2px solid #3b82f6;"></div>
           </div>
 
-          <!-- Bottom Architectural Prompt -->
-          <div style="text-align: center; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); padding: 4px 12px; border-radius: 6px; font-size: 0.75rem; color: #cbd5e1; align-self: center; margin-bottom: 0.5rem;">
+          <div style="text-align: center; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); padding: 4px 12px; border-radius: 6px; font-size: 0.75rem; color: #cbd5e1; align-self: center;">
             Tip: Frame wall corners and floor boundaries within view for best spatial measurement.
           </div>
         </div>
 
         <!-- Camera Permission / Error Fallback Notice -->
-        <div id="camera-error-fallback" style="display: none; position: absolute; inset: 0; background: rgba(13,19,34,0.95); flex-direction: column; align-items: center; justify-content: center; padding: 2rem; text-align: center;">
-          <span style="font-size: 2.5rem; margin-bottom: 0.75rem;">📷⚠️</span>
-          <h4 style="color: #f87171; margin-bottom: 0.5rem;">Camera Access Unavailable</h4>
-          <p id="camera-error-msg" style="font-size: 0.85rem; color: var(--text-muted); max-width: 440px; margin-bottom: 1.25rem;">
-            Could not start camera. Please ensure camera permissions are allowed in your browser settings (click lock or camera icon in address bar) or connect a webcam.
+        <div id="camera-error-fallback" style="display: none; position: absolute; inset: 0; background: rgba(14,20,36,0.95); flex-direction: column; align-items: center; justify-content: center; padding: 2rem; text-align: center;">
+          <span style="font-size: 2.2rem; margin-bottom: 0.75rem;">📷⚠️</span>
+          <h4 style="color: #f87171; margin-bottom: 0.4rem;">Camera Access Unavailable</h4>
+          <p id="camera-error-msg" style="font-size: 0.82rem; color: var(--text-muted); max-width: 440px; margin-bottom: 1.25rem;">
+            Could not start camera. Please ensure camera permissions are allowed in your browser settings or connect a webcam.
           </p>
           <div style="display: flex; gap: 0.75rem;">
             <button class="btn btn-primary btn-sm" onclick="startCameraStream()">🔄 Try Again</button>
@@ -1040,18 +1626,17 @@
         </div>
       </div>
 
-      <!-- Camera Controls & Device Selector Bar -->
+      <!-- Camera Controls Bar -->
       <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 1rem; flex-wrap: wrap; gap: 0.75rem;">
         <div style="display: flex; align-items: center; gap: 0.5rem;">
-          <span style="font-size: 0.8rem; color: var(--text-muted);">Camera Source:</span>
-          <select id="camera-source-select" class="form-control" style="width: 220px; font-size: 0.8rem;" onchange="switchCameraSource(this.value)">
+          <span style="font-size: 0.78rem; color: var(--text-dim); font-weight: 600;">Source:</span>
+          <select id="camera-source-select" class="form-control" style="width: 200px; font-size: 0.78rem; padding: 4px 8px;" onchange="switchCameraSource(this.value)">
             <option value="">Default Camera</option>
           </select>
           <button class="btn btn-secondary btn-sm" onclick="flipCamera()" title="Flip Front / Rear Camera">🔄 Flip</button>
           <button class="btn btn-secondary btn-sm" onclick="toggleARGrid()" title="Toggle Guide Lines">📐 Guides</button>
         </div>
 
-        <!-- Action / Shutter Buttons -->
         <div style="display: flex; align-items: center; gap: 0.5rem;" id="scanner-action-buttons">
           <button class="btn btn-primary" id="btn-snap-frame" onclick="snapLiveCameraFrame()">
             📸 Capture Room Frame
@@ -1068,10 +1653,101 @@
         </div>
       </div>
 
-      <!-- Real-time Status / Loading Message -->
       <div id="camera-scan-status-text" style="font-size: 0.82rem; color: #60a5fa; margin-top: 0.75rem; display: none;"></div>
     </div>
   </div>
+
+  <!-- Location Details & Jurisdiction Modal -->
+  <div id="location-modal" class="modal-overlay">
+    <div class="modal-card" style="max-width: 560px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.25rem;">
+        <div>
+          <h3 style="display: flex; align-items: center; gap: 0.5rem; font-size: 1.15rem;">
+            <span>📍</span> Change Project Location & Sourcing
+          </h3>
+          <p style="font-size: 0.78rem; color: var(--text-muted); margin-top: 2px;">
+            Adjust jurisdiction, local contractor rates, and marketplace product availability.
+          </p>
+        </div>
+        <button class="btn btn-secondary btn-sm" onclick="closeLocationModal()">✕</button>
+      </div>
+
+      <!-- Auto-Detect Location Card -->
+      <div style="background: var(--accent-subtle); border: 1px solid rgba(16,185,129,0.25); border-radius: var(--radius-sm); padding: 0.85rem 1rem; margin-bottom: 1.15rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
+        <div>
+          <div style="font-weight: 700; font-size: 0.85rem; color: #34d399;">⚡ Auto-Detect My Location</div>
+          <div style="font-size: 0.74rem; color: var(--text-muted);">Use browser GPS to pinpoint your real city and country.</div>
+        </div>
+        <button class="btn btn-accent btn-sm" id="btn-detect-location" onclick="detectUserLocation('edit')">
+          📍 Detect with GPS
+        </button>
+      </div>
+
+      <!-- Freeform Location Input Field -->
+      <div class="form-group">
+        <label>City, Region or Address</label>
+        <input type="text" id="edit-location-input" class="form-control" list="location-datalist" placeholder="e.g. Mumbai, India or Austin, TX or London, UK">
+      </div>
+
+      <!-- Quick Presets -->
+      <div class="form-group">
+        <label style="margin-bottom: 0.4rem;">Popular Metropolitan Presets:</label>
+        <div style="display: flex; gap: 0.35rem; flex-wrap: wrap;">
+          <button type="button" class="btn btn-secondary btn-sm" onclick="setLocationInput('Bengaluru, India')">Bengaluru</button>
+          <button type="button" class="btn btn-secondary btn-sm" onclick="setLocationInput('Mumbai, India')">Mumbai</button>
+          <button type="button" class="btn btn-secondary btn-sm" onclick="setLocationInput('Delhi NCR, India')">Delhi NCR</button>
+          <button type="button" class="btn btn-secondary btn-sm" onclick="setLocationInput('Hyderabad, India')">Hyderabad</button>
+          <button type="button" class="btn btn-secondary btn-sm" onclick="setLocationInput('Pune, India')">Pune</button>
+          <button type="button" class="btn btn-secondary btn-sm" onclick="setLocationInput('Austin, TX')">Austin, TX</button>
+          <button type="button" class="btn btn-secondary btn-sm" onclick="setLocationInput('San Francisco, CA')">San Francisco</button>
+          <button type="button" class="btn btn-secondary btn-sm" onclick="setLocationInput('New York, NY')">New York</button>
+          <button type="button" class="btn btn-secondary btn-sm" onclick="setLocationInput('Seattle, WA')">Seattle</button>
+          <button type="button" class="btn btn-secondary btn-sm" onclick="setLocationInput('London, UK')">London</button>
+        </div>
+      </div>
+
+      <!-- Currency Option -->
+      <div class="form-group" style="margin-top: 1rem;">
+        <label>Currency & Budget Envelope Adaptation</label>
+        <select id="edit-currency-select" class="form-control">
+          <option value="AUTO" selected>Auto-adapt (INR ₹ for India, USD $ for US/Global)</option>
+          <option value="INR">Indian Rupee (INR ₹)</option>
+          <option value="USD">US Dollar (USD $)</option>
+        </select>
+      </div>
+
+      <div id="location-update-status" style="font-size: 0.8rem; color: #60a5fa; margin-top: 0.5rem; display: none;"></div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 0.75rem; margin-top: 1.25rem;">
+        <button class="btn btn-secondary" onclick="closeLocationModal()">Cancel</button>
+        <button class="btn btn-primary" id="btn-save-location" onclick="submitLocationChange()">Update Location & Recalculate</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Shared Global & Regional Location Datalist -->
+  <datalist id="location-datalist">
+    <option value="Bengaluru, India"></option>
+    <option value="Mumbai, India"></option>
+    <option value="Delhi NCR, India"></option>
+    <option value="Hyderabad, India"></option>
+    <option value="Pune, India"></option>
+    <option value="Chennai, India"></option>
+    <option value="Kolkata, India"></option>
+    <option value="Noida, India"></option>
+    <option value="Gurugram, India"></option>
+    <option value="Ahmedabad, India"></option>
+    <option value="Austin, TX"></option>
+    <option value="San Francisco, CA"></option>
+    <option value="New York, NY"></option>
+    <option value="Seattle, WA"></option>
+    <option value="Chicago, IL"></option>
+    <option value="Miami, FL"></option>
+    <option value="Los Angeles, CA"></option>
+    <option value="London, UK"></option>
+    <option value="Toronto, Canada"></option>
+    <option value="Dubai, UAE"></option>
+  </datalist>
 
   <!-- ===================================================================== -->
   <!-- FRONTEND JAVASCRIPT & THREE.JS 3D ENGINE -->
@@ -1098,7 +1774,7 @@
       if (target) target.classList.add('active');
 
       if (tabId === 'studio3d' && renderer) {
-        onWindowResize();
+        setTimeout(onWindowResize, 50);
       }
     }
 
@@ -1106,6 +1782,13 @@
     function closeNewProjectModal() { 
       document.getElementById('new-project-modal').style.display = 'none'; 
       stopNewProjectCamera();
+    }
+
+    // Helper for chat suggestions
+    function insertPrompt(text) {
+      const inp = document.getElementById('chat-input');
+      inp.value = text;
+      inp.focus();
     }
 
     // Initial Load & Project Synchronization
@@ -1125,7 +1808,7 @@
           data.projects.forEach(p => {
             const opt = document.createElement('option');
             opt.value = p.project_id;
-            opt.innerText = `${p.name} (${p.location}) [v${p.current_version}]`;
+            opt.innerText = `${p.name} • ${p.location} (v${p.current_version})`;
             sel.appendChild(opt);
           });
           sel.value = data.projects[0].project_id;
@@ -1175,7 +1858,7 @@
       const height = container.clientHeight;
 
       scene = new THREE.Scene();
-      scene.background = new THREE.Color(0x070b14);
+      scene.background = new THREE.Color(0x080c16);
 
       camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000);
       camera.position.set(0, 18, 22);
@@ -1262,7 +1945,7 @@
       // Floor
       const floorGeo = new THREE.PlaneGeometry(w, l);
       const floorMat = new THREE.MeshStandardMaterial({
-        color: 0x141e33,
+        color: 0x131c31,
         roughness: 0.8,
         metalness: 0.1,
       });
@@ -1273,7 +1956,7 @@
       roomMeshes.push(floor);
 
       // Grid helper (1 unit = 1 foot)
-      const grid = new THREE.GridHelper(Math.max(w, l), Math.max(w, l), 0x3b82f6, 0x24324f);
+      const grid = new THREE.GridHelper(Math.max(w, l), Math.max(w, l), 0x3b82f6, 0x22304d);
       grid.position.y = 0.01;
       scene.add(grid);
       roomMeshes.push(grid);
@@ -1282,7 +1965,7 @@
       const wallMat = new THREE.MeshStandardMaterial({
         color: 0x1e293b,
         transparent: true,
-        opacity: 0.25,
+        opacity: 0.22,
         side: THREE.DoubleSide,
       });
 
@@ -1306,7 +1989,7 @@
       // Blueprint Wireframe
       const wireBox = new THREE.LineSegments(
         new THREE.EdgesGeometry(new THREE.BoxGeometry(w, h, l)),
-        new THREE.LineBasicMaterial({ color: 0x3b82f6, transparent: true, opacity: 0.4 })
+        new THREE.LineBasicMaterial({ color: 0x3b82f6, transparent: true, opacity: 0.35 })
       );
       wireBox.position.set(0, h / 2, 0);
       scene.add(wireBox);
@@ -1337,7 +2020,7 @@
 
         const pEdges = new THREE.LineSegments(
           new THREE.EdgesGeometry(pGeo),
-          new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.5 })
+          new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.45 })
         );
         pMesh.add(pEdges);
         pMesh.userData = it;
@@ -1388,8 +2071,8 @@
       document.getElementById('inspector-name').innerText = it.name;
       document.getElementById('inspector-retailer').innerText = `${it.brand_or_retailer} • ${it.location_availability}`;
       document.getElementById('inspector-price').innerText = `${sym}${it.price.toLocaleString()}`;
-      document.getElementById('inspector-dims').innerText = `${Math.round(it.width_ft*12)}" W × ${Math.round(it.depth_ft*12)}" D × ${Math.round(it.height_ft*12)}" H (${it.width_ft} × ${it.depth_ft} × ${it.height_ft} ft)`;
-      document.getElementById('inspector-pos').innerText = `X: ${it.x.toFixed(1)} ft, Z: ${it.z.toFixed(1)} ft (Rot: ${it.rotation_deg}°)`;
+      document.getElementById('inspector-dims').innerText = `${Math.round(it.width_ft*12)}"W × ${Math.round(it.depth_ft*12)}"D × ${Math.round(it.height_ft*12)}"H (${it.width_ft} × ${it.depth_ft} × ${it.height_ft} ft)`;
+      document.getElementById('inspector-pos').innerText = `X: ${it.x.toFixed(1)} ft, Z: ${it.z.toFixed(1)} ft (${it.rotation_deg}°)`;
     }
 
     function deselectItem() {
@@ -1408,7 +2091,7 @@
 
       selectedMesh.position.x = it.x;
       selectedMesh.position.z = it.z;
-      document.getElementById('inspector-pos').innerText = `X: ${it.x.toFixed(1)} ft, Z: ${it.z.toFixed(1)} ft (Rot: ${it.rotation_deg}°)`;
+      document.getElementById('inspector-pos').innerText = `X: ${it.x.toFixed(1)} ft, Z: ${it.z.toFixed(1)} ft (${it.rotation_deg}°)`;
 
       await syncLayoutToServer();
     }
@@ -1418,7 +2101,7 @@
       const it = selectedMesh.userData;
       it.rotation_deg = (it.rotation_deg + deg) % 360;
       selectedMesh.rotation.y = (it.rotation_deg * Math.PI) / 180.0;
-      document.getElementById('inspector-pos').innerText = `X: ${it.x.toFixed(1)} ft, Z: ${it.z.toFixed(1)} ft (Rot: ${it.rotation_deg}°)`;
+      document.getElementById('inspector-pos').innerText = `X: ${it.x.toFixed(1)} ft, Z: ${it.z.toFixed(1)} ft (${it.rotation_deg}°)`;
 
       await syncLayoutToServer();
     }
@@ -1477,13 +2160,13 @@
 
       if (!warnings || warnings.length === 0) {
         banner.className = "clearance-banner ok";
-        text.innerHTML = `<strong>Spatial Clearance Verified:</strong> All placed items fit within the room and maintain standard 36-42 inch walkways.`;
+        text.innerHTML = `<strong>Clearances Code Compliant:</strong> All placed items fit within boundaries with ≥36" standard walkways.`;
         kpiStatus.innerText = "VERIFIED";
         kpiStatus.style.color = "#34d399";
         kpiSub.innerText = "Walkways ≥ 36 inches";
       } else {
         banner.className = "clearance-banner warning";
-        let html = `<strong>Spatial Clearance Warning (${warnings.length} issue${warnings.length>1?'s':''}):</strong><ul style="margin-top:4px; padding-left:1.2rem;">`;
+        let html = `<strong>Clearance Warning (${warnings.length} issue${warnings.length>1?'s':''}):</strong><ul style="margin-top:3px; padding-left:1.1rem;">`;
         warnings.forEach(w => { html += `<li>${w}</li>`; });
         html += `</ul>`;
         text.innerHTML = html;
@@ -1497,6 +2180,7 @@
     function renderPlacedItemsChips(items) {
       const container = document.getElementById('placed-items-chips');
       const navBadge = document.getElementById('nav-cart-count');
+      const chipsCount = document.getElementById('placed-chips-count');
       const kpiPlacedCost = document.getElementById('kpi-placed-cost');
       const kpiPlacedCount = document.getElementById('kpi-placed-count');
 
@@ -1504,19 +2188,26 @@
       const totalCost = items.reduce((sum, it) => sum + (it.price || 0), 0);
 
       navBadge.innerText = items.length;
+      if (chipsCount) chipsCount.innerText = `${items.length} item${items.length===1?'':'s'}`;
       kpiPlacedCost.innerText = `${sym}${totalCost.toLocaleString()}`;
       kpiPlacedCount.innerText = `${items.length} item${items.length===1?'':'s'} placed in 3D`;
 
       if (items.length === 0) {
-        container.innerHTML = `<span style="color:var(--text-muted); font-size:0.85rem;">No items placed yet. Click "➕ Add Products from Store" above to begin!</span>`;
+        container.innerHTML = `<span style="color:var(--text-dim); font-size:0.78rem; text-align:center; padding:1rem 0;">No products placed in 3D yet.<br>Click "➕ Add Products from Store" to start!</span>`;
         return;
       }
 
       container.innerHTML = '';
       items.forEach(it => {
         const chip = document.createElement('div');
-        chip.style.cssText = "background:var(--surface); border:1px solid var(--card-border); padding:6px 12px; border-radius:6px; font-size:0.8rem; display:flex; align-items:center; gap:8px; cursor:pointer;";
-        chip.innerHTML = `<strong>${it.name}</strong> <span style="color:#60a5fa;">(${sym}${it.price.toLocaleString()})</span>`;
+        chip.className = 'placed-chip-item';
+        chip.innerHTML = `
+          <div style="display: flex; align-items: center; gap: 6px;">
+            <span style="font-size: 0.9rem;">📦</span>
+            <div class="placed-chip-name">${it.name}</div>
+          </div>
+          <div class="placed-chip-price">${sym}${it.price.toLocaleString()}</div>
+        `;
         chip.onclick = () => {
           const mesh = productMeshes.find(m => m.userData.item_id === it.item_id);
           if (mesh) selectItemByMesh(mesh);
@@ -1590,8 +2281,8 @@
     function renderProductsGrid(products) {
       const grid = document.getElementById('product-grid');
       if (!products || products.length === 0) {
-        grid.innerHTML = `<div style="grid-column: 1/-1; padding: 2rem; text-align: center; color: var(--text-muted);">
-          No products found matching your current filter. Try selecting "All Locations" or removing keywords.
+        grid.innerHTML = `<div style="grid-column: 1/-1; padding: 2.5rem; text-align: center; color: var(--text-muted);">
+          No products found matching your current filter. Try selecting "All Locations" or clear your search keywords.
         </div>`;
         return;
       }
@@ -1610,10 +2301,10 @@
         card.className = 'product-card';
         card.innerHTML = `
           <div>
-            <div class="product-icon">${p.image_icon || '📦'}</div>
+            <div class="product-icon-wrap">${p.image_icon || '📦'}</div>
             <div class="product-name">${p.name}</div>
             <div class="product-retailer">${p.brand_or_retailer} • ${p.category}</div>
-            <div class="product-dim">📐 ${wIn}" W × ${dIn}" D × ${hIn}" H<br><span style="color:#60a5fa;">(${wFt} × ${dFt} × ${hFt} ft)</span></div>
+            <div class="product-dim">📐 ${wIn}"W × ${dIn}"D × ${hIn}"H <span style="color:#60a5fa;">(${wFt} × ${dFt} × ${hFt} ft)</span></div>
             <div class="product-loc">📍 ${p.location_availability}</div>
           </div>
           <div class="product-price-row">
@@ -1667,7 +2358,7 @@
       const sym = (currentProject && currentProject.currency === "USD") ? "$" : "₹";
 
       if (!placedItems || placedItems.length === 0) {
-        tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:var(--text-muted); padding:1.5rem;">No products placed in the room yet. Browse the Marketplace to add items!</td></tr>`;
+        tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; color:var(--text-dim); padding:1.5rem;">No products placed in the 3D room yet. Browse the Marketplace to add items!</td></tr>`;
         return;
       }
 
@@ -1675,10 +2366,10 @@
         tbody.innerHTML += `<tr>
           <td><strong>${it.name}</strong></td>
           <td>${it.brand_or_retailer}</td>
-          <td style="font-family:monospace;">${Math.round(it.width_ft*12)}"W × ${Math.round(it.depth_ft*12)}"D × ${Math.round(it.height_ft*12)}"H</td>
+          <td style="font-family:'JetBrains Mono',monospace;">${Math.round(it.width_ft*12)}"W × ${Math.round(it.depth_ft*12)}"D × ${Math.round(it.height_ft*12)}"H</td>
           <td style="font-weight:700;">${sym}${it.price.toLocaleString()}</td>
-          <td style="color:#34d399; font-size:0.8rem;">${it.location_availability}</td>
-          <td>
+          <td style="color:#34d399; font-size:0.78rem; font-weight:600;">${it.location_availability}</td>
+          <td style="text-align:right;">
             <button class="btn btn-danger btn-sm" onclick="deletePlacedItemById('${it.item_id}')">🗑️ Remove</button>
           </td>
         </tr>`;
@@ -1713,9 +2404,9 @@
       const sym = (currentProject && currentProject.currency === "USD") ? "$" : "₹";
 
       document.getElementById('boq-grand-total').innerText = `${sym}${boq.grand_total.toLocaleString()}`;
-      document.getElementById('boq-sub-materials').innerText = `Materials: ${sym}${boq.subtotal_materials.toLocaleString()}`;
-      document.getElementById('boq-sub-labor').innerText = `Labor: ${sym}${boq.subtotal_labor.toLocaleString()}`;
-      document.getElementById('boq-sub-contingency').innerText = `Contingency (10%): ${sym}${boq.contingency_amount.toLocaleString()}`;
+      document.getElementById('boq-sub-materials').innerText = `${sym}${boq.subtotal_materials.toLocaleString()}`;
+      document.getElementById('boq-sub-labor').innerText = `${sym}${boq.subtotal_labor.toLocaleString()}`;
+      document.getElementById('boq-sub-contingency').innerText = `${sym}${boq.contingency_amount.toLocaleString()}`;
 
       const tbody = document.querySelector('#table-boq-arch tbody');
       if (!tbody) return;
@@ -1724,13 +2415,13 @@
       const archItems = (boq.items || []).filter(i => i.category !== "Placed Products & Fixtures");
       archItems.forEach(i => {
         tbody.innerHTML += `<tr>
-          <td style="font-family:monospace;">${i.item_id}</td>
-          <td><strong>${i.category}</strong></td>
-          <td>${i.item_name}<br><span style="font-size:0.75rem; color:var(--text-muted);">${i.description}</span></td>
+          <td style="font-family:'JetBrains Mono',monospace; font-size:0.75rem; color:var(--text-dim);">${i.item_id}</td>
+          <td><span class="badge" style="background:var(--surface-light);">${i.category}</span></td>
+          <td><strong>${i.item_name}</strong><br><span style="font-size:0.72rem; color:var(--text-muted);">${i.description}</span></td>
           <td>${i.quantity} ${i.unit}</td>
           <td>${sym}${i.material_unit_rate.toLocaleString()}</td>
           <td>${sym}${i.labor_unit_rate.toLocaleString()}</td>
-          <td style="font-weight:700;">${sym}${i.total_amount.toLocaleString()}</td>
+          <td style="font-weight:700; text-align:right;">${sym}${i.total_amount.toLocaleString()}</td>
         </tr>`;
       });
     }
@@ -1741,6 +2432,13 @@
       document.getElementById('kpi-budget').innerText = `${sym}${p.target_budget.toLocaleString()}`;
       document.getElementById('kpi-currency').innerText = `${p.currency} Envelope`;
       document.getElementById('header-location-text').innerText = p.location;
+      const visLoc = document.getElementById('vision-card-location');
+      if (visLoc) visLoc.innerText = p.location;
+
+      const sideName = document.getElementById('sidebar-proj-name');
+      const sideSub = document.getElementById('sidebar-proj-sub');
+      if (sideName) sideName.innerText = p.name;
+      if (sideSub) sideSub.innerText = `${p.room_type.toUpperCase()} • ${p.style.toUpperCase()} (v${p.current_version})`;
 
       if (p.original_image_path) {
         const img = document.getElementById('img-before');
@@ -1845,6 +2543,31 @@
       chatBox.scrollTop = chatBox.scrollHeight;
 
       const lower = msg.toLowerCase();
+
+      // Conversational Location Change Intent
+      if (lower.startsWith("change location to ") || lower.startsWith("switch location to ") || lower.startsWith("set location to ")) {
+        const targetLoc = msg.replace(/^(change|switch|set) location to /i, '').trim();
+        if (targetLoc) {
+          try {
+            const res = await fetch(`/api/projects/${currentProject.project_id}/location`, {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ location: targetLoc, auto_adapt_currency: true })
+            });
+            const data = await res.json();
+            if (data.success && data.project) {
+              chatBox.innerHTML += `<div class="chat-msg assistant">✨ <strong>Location Updated:</strong><br>${data.message}</div>`;
+              currentProject = data.project;
+              renderProjectUI(currentProject);
+              chatBox.scrollTop = chatBox.scrollHeight;
+              return;
+            }
+          } catch (e) {
+            console.error("Chat location change failed", e);
+          }
+        }
+      }
+
       const isEdit = lower.startsWith("make") || lower.startsWith("change") || lower.startsWith("switch") || lower.startsWith("replace") || lower.includes("cabinet") || lower.includes("countertop") || lower.includes("flooring") || lower.includes("paint");
 
       if (isEdit) {
@@ -1962,7 +2685,6 @@
 
       newProjectCameraImage = canvas.toDataURL('image/jpeg', 0.88);
 
-      // Stop stream to release camera
       if (modalCameraStream) {
         modalCameraStream.getTracks().forEach(t => t.stop());
         modalCameraStream = null;
@@ -1991,9 +2713,7 @@
       if (video) video.srcObject = null;
     }
 
-    // =========================================================================
-    // DEDICATED LIVE ROOM CAMERA SCANNER MODAL (FOR CURRENT PROJECT)
-    // =========================================================================
+    // Live Room Camera Scanner Modal
     async function openCameraModal(mode = 'project') {
       if (mode === 'project' && !currentProject) {
         alert("Please select or start a project before scanning room.");
@@ -2005,7 +2725,6 @@
       document.getElementById('camera-scan-status-text').style.display = 'none';
       capturedCameraImage = null;
 
-      // Reset buttons and elements
       document.getElementById('scanner-action-buttons').style.display = 'flex';
       document.getElementById('scanner-review-buttons').style.display = 'none';
       document.getElementById('live-scanner-canvas').style.display = 'none';
@@ -2063,7 +2782,7 @@
       } catch (err) {
         console.error("Camera stream error:", err);
         fallback.style.display = 'flex';
-        errorMsg.innerText = `Unable to access camera (${err.name}: ${err.message}). Please ensure camera permissions are allowed in your browser settings (look for camera/lock icon in address bar) or connect a webcam device.`;
+        errorMsg.innerText = `Unable to access camera (${err.name}: ${err.message}). Please ensure camera permissions are allowed in your browser settings or connect a webcam device.`;
       }
     }
 
@@ -2107,12 +2826,10 @@
 
       capturedCameraImage = canvas.toDataURL('image/jpeg', 0.90);
 
-      // Freeze frame preview
       video.style.display = 'none';
       canvas.style.display = 'block';
       document.getElementById('scanner-hud-overlay').style.display = 'none';
 
-      // Switch to review buttons
       document.getElementById('scanner-action-buttons').style.display = 'none';
       document.getElementById('scanner-review-buttons').style.display = 'flex';
     }
@@ -2159,16 +2876,13 @@
           statusText.innerText = "✅ Spatial model synthesized! Updating 3D studio...";
           currentProject = data.project;
 
-          // Update 3D studio layout
           if (data.project.layout_3d) {
             currentLayout = data.project.layout_3d;
             render3DRoom(currentLayout);
           }
 
-          // Update UI
           renderProjectUI(currentProject);
 
-          // Add assistant message to chat
           const chatBox = document.getElementById('chat-box');
           if (chatBox && data.message) {
             chatBox.innerHTML += `<div class="chat-msg assistant">${data.message}</div>`;
@@ -2177,7 +2891,6 @@
 
           setTimeout(() => {
             closeCameraModal();
-            // Switch to 3D studio tab so user immediately sees their room!
             switchTab('studio3d', document.querySelectorAll('.nav-item')[0]);
           }, 800);
 
@@ -2192,7 +2905,188 @@
         btn.innerText = "⚡ Analyze & Update 3D Studio";
       }
     }
+
+    // =========================================================================
+    // LOCATION MANAGEMENT & AUTO-GEOLOCATION SYSTEM
+    // =========================================================================
+    function openLocationModal() {
+      if (!currentProject) {
+        alert("Please select or start a project first.");
+        return;
+      }
+      document.getElementById('edit-location-input').value = currentProject.location || '';
+      document.getElementById('edit-currency-select').value = 'AUTO';
+      document.getElementById('location-update-status').style.display = 'none';
+      document.getElementById('location-modal').style.display = 'flex';
+    }
+
+    function closeLocationModal() {
+      document.getElementById('location-modal').style.display = 'none';
+    }
+
+    function setLocationInput(loc) {
+      document.getElementById('edit-location-input').value = loc;
+    }
+
+    function autoDetectCurrencyForNewProject(loc) {
+      const locLower = (loc || '').toLowerCase();
+      const inrTerms = ["india", "bengaluru", "bangalore", "mumbai", "delhi", "pune", "hyderabad", "chennai", "kolkata", "noida", "gurugram", "ahmedabad", "jaipur"];
+      const currencySel = document.getElementById('new-currency');
+      const budgetInp = document.getElementById('new-budget');
+      if (inrTerms.some(t => locLower.includes(t))) {
+        currencySel.value = 'INR';
+        if (parseFloat(budgetInp.value) < 100000) {
+          budgetInp.value = '800000';
+        }
+      } else if (["us", "usa", "texas", "austin", "california", "ca", "ny", "york", "francisco", "seattle", "chicago", "miami"].some(t => locLower.includes(t))) {
+        currencySel.value = 'USD';
+        if (parseFloat(budgetInp.value) > 100000) {
+          budgetInp.value = '35000';
+        }
+      }
+    }
+
+    async function detectUserLocation(target = 'edit') {
+      const statusEl = (target === 'edit') ? document.getElementById('location-update-status') : null;
+      if (statusEl) {
+        statusEl.style.display = 'block';
+        statusEl.innerText = "🛰️ Detecting your device GPS position...";
+      }
+
+      if (!navigator.geolocation) {
+        alert("Geolocation is not supported by your browser.");
+        if (statusEl) statusEl.style.display = 'none';
+        return;
+      }
+
+      navigator.geolocation.getCurrentPosition(async (position) => {
+        try {
+          const lat = position.coords.latitude;
+          const lon = position.coords.longitude;
+          if (statusEl) statusEl.innerText = `Resolving coordinates (${lat.toFixed(2)}, ${lon.toFixed(2)})...`;
+
+          const res = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}`);
+          const data = await res.json();
+
+          let resolvedLocation = "";
+          if (data && data.address) {
+            const city = data.address.city || data.address.town || data.address.village || data.address.municipality || data.address.suburb || data.address.county || "Local City";
+            const state = data.address.state || "";
+            const country = data.address.country || "";
+            resolvedLocation = `${city}${state ? ', ' + state : ''}, ${country}`;
+          } else {
+            resolvedLocation = `Lat ${lat.toFixed(2)}, Lon ${lon.toFixed(2)}`;
+          }
+
+          if (target === 'edit') {
+            document.getElementById('edit-location-input').value = resolvedLocation;
+            statusEl.innerText = `✅ Detected: ${resolvedLocation}`;
+          } else {
+            document.getElementById('new-location').value = resolvedLocation;
+            autoDetectCurrencyForNewProject(resolvedLocation);
+          }
+        } catch (err) {
+          console.warn("Reverse geocode failed, using client approximation", err);
+          const fallback = Intl.DateTimeFormat().resolvedOptions().timeZone || "Regional Hub";
+          const locStr = fallback.replace('_', ' ').replace('/', ', ');
+          if (target === 'edit') {
+            document.getElementById('edit-location-input').value = locStr;
+            if (statusEl) statusEl.innerText = `Approximated timezone location: ${locStr}`;
+          } else {
+            document.getElementById('new-location').value = locStr;
+            autoDetectCurrencyForNewProject(locStr);
+          }
+        }
+      }, (error) => {
+        console.warn("Geolocation denied or error:", error);
+        const errMsg = error.code === 1 ? "Permission denied. Please allow location access or pick a preset." : "Location lookup timed out. Please enter manually.";
+        if (statusEl) {
+          statusEl.innerText = `⚠️ ${errMsg}`;
+        } else {
+          alert(errMsg);
+        }
+      }, { timeout: 8000 });
+    }
+
+    async function submitLocationChange() {
+      if (!currentProject) return;
+
+      const newLoc = document.getElementById('edit-location-input').value.trim();
+      if (!newLoc) {
+        alert("Please enter a valid location.");
+        return;
+      }
+
+      const curChoice = document.getElementById('edit-currency-select').value;
+      const isAuto = curChoice === 'AUTO';
+      const btn = document.getElementById('btn-save-location');
+      const statusEl = document.getElementById('location-update-status');
+
+      btn.disabled = true;
+      btn.innerText = "Recalculating Regulations & Rates...";
+      statusEl.style.display = 'block';
+      statusEl.innerText = "Updating municipal building codes and regional contractor rates...";
+
+      try {
+        const res = await fetch(`/api/projects/${currentProject.project_id}/location`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            location: newLoc,
+            currency: isAuto ? null : curChoice,
+            auto_adapt_currency: isAuto,
+          })
+        });
+
+        const data = await res.json();
+        if (data.success && data.project) {
+          currentProject = data.project;
+          if (data.project.layout_3d) {
+            currentLayout = data.project.layout_3d;
+            render3DRoom(currentLayout);
+          }
+
+          renderProjectUI(currentProject);
+
+          document.getElementById('header-location-text').innerText = currentProject.location;
+          const visLoc = document.getElementById('vision-card-location');
+          if (visLoc) visLoc.innerText = currentProject.location;
+
+          const marketFilter = document.getElementById('market-city-filter');
+          if (marketFilter) {
+            let matched = false;
+            for (let i = 0; i < marketFilter.options.length; i++) {
+              if (currentProject.location.toLowerCase().includes(marketFilter.options[i].value.toLowerCase())) {
+                marketFilter.selectedIndex = i;
+                matched = true;
+                break;
+              }
+            }
+            if (!matched) marketFilter.selectedIndex = 0;
+            filterProducts();
+          }
+
+          const chatBox = document.getElementById('chat-box');
+          if (chatBox && data.message) {
+            chatBox.innerHTML += `<div class="chat-msg assistant">${data.message}</div>`;
+            chatBox.scrollTop = chatBox.scrollHeight;
+          }
+
+          statusEl.innerText = "✅ Location updated successfully!";
+          setTimeout(() => {
+            closeLocationModal();
+          }, 600);
+        } else {
+          alert("Error updating location: " + (data.error || "Unknown error"));
+        }
+      } catch (err) {
+        console.error("Location update failed", err);
+        alert("Failed to update location: " + err);
+      } finally {
+        btn.disabled = false;
+        btn.innerText = "Update Location & Recalculate";
+      }
+    }
   </script>
 </body>
 </html>
-

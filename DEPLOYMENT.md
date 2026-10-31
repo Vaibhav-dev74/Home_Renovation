@@ -123,3 +123,4 @@ Expected response:
   "gemini_api_configured": true
 }
 ```
+

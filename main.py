@@ -212,8 +212,14 @@ def main():
     parser.add_argument(
         "--port",
         type=int,
-        default=8000,
-        help="Port for the Web UI server (default: 8000)",
+        default=int(os.getenv("PORT", "8000")),
+        help="Port for the Web UI server (default: 8000 or $PORT)",
+    )
+    parser.add_argument(
+        "--host",
+        type=str,
+        default=os.getenv("HOST", "0.0.0.0"),
+        help="Host address to bind the Web UI server (default: 0.0.0.0)",
     )
     parser.add_argument(
         "--check",
@@ -232,7 +238,7 @@ def main():
     else:
         # Default: Launch modern Enterprise SaaS Web Application
         import web_app
-        web_app.run_server(port=args.port)
+        web_app.run_server(port=args.port, host=args.host)
 
 
 if __name__ == "__main__":

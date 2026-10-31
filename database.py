@@ -5,6 +5,7 @@ version history snapshots, and conversational audit trails. Uses standard librar
 with automatic table migrations and JSON serialization for complex nested models.
 """
 
+import os
 import sqlite3
 import json
 import logging
@@ -28,7 +29,7 @@ from models import (
 
 logger = logging.getLogger(__name__)
 
-DB_PATH = Path(__file__).resolve().parent / "renovation_platform.db"
+DB_PATH = Path(os.getenv("DATABASE_PATH", str(Path(__file__).resolve().parent / "renovation_platform.db")))
 
 
 def get_connection(db_path: Path = DB_PATH) -> sqlite3.Connection:

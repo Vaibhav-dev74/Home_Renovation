@@ -2106,28 +2106,35 @@ def _unused_legacy_template():
 # Server Runner
 # ============================================================================
 
-def run_server(port: int = 8000, host: str = "127.0.0.1"):
-    """Starts the FastAPI Web Application with port conflict handling."""
+def run_server(port: Optional[int] = None, host: Optional[str] = None):
+    """Starts the FastAPI Web Application with environment port/host support."""
     import socket
+
+    if host is None:
+        host = os.getenv("HOST", "0.0.0.0")
+    if port is None:
+        port = int(os.getenv("PORT", "8000"))
 
     def is_port_in_use(p: int) -> bool:
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-            return s.connect_ex((host, p)) == 0
+            return s.connect_ex(("127.0.0.1", p)) == 0
 
     target_port = port
-    while is_port_in_use(target_port):
-        logger.warning("Port %d is in use. Trying %d...", target_port, target_port + 1)
-        target_port += 1
+    # In cloud environments (PORT env provided by PaaS), don't shift port
+    if "PORT" not in os.environ:
+        while is_port_in_use(target_port):
+            logger.warning("Port %d is in use. Trying %d...", target_port, target_port + 1)
+            target_port += 1
 
     print("\n" + "=" * 74)
     print("   [AI HOME RENOVATION INTELLIGENCE PLATFORM] - ENTERPRISE V2.5")
     print("   Powered by Google Gemini 3.6 / 3.8 Flash & Google ADK Multi-Agent")
     print("=" * 74)
-    print(f"\n🚀 Server started successfully on port {target_port}!")
+    print(f"\n🚀 Server started successfully on {host}:{target_port}!")
     print(f"👉 Web Dashboard: http://localhost:{target_port}")
     print("\nPress Ctrl+C to stop the server.\n")
 
-    uvicorn.run(app, host=host, port=target_port, log_level="warning")
+    uvicorn.run(app, host=host, port=target_port, log_level="info")
 
 
 if __name__ == "__main__":

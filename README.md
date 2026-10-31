@@ -24,6 +24,7 @@ The platform behaves as an autonomous, multidisciplinary team of interior design
 - [Tech Stack](#-tech-stack)
 - [Project Directory Structure](#-project-directory-structure)
 - [Installation & Quick Start](#-installation--quick-start)
+- [Cloud Deployment](#-cloud-deployment)
 - [REST API Reference](#-rest-api-reference)
 - [Testing & Quality Verification](#-testing--quality-verification)
 - [AI Safety & Disclaimers](#-ai-safety--disclaimers)
@@ -317,6 +318,19 @@ python main.py --cli
 python main.py --web
 ```
 Open your browser at: **[http://localhost:8000](http://localhost:8000)**
+
+---
+
+## 🚀 Cloud Deployment
+
+The platform is containerized and pre-configured for 1-click cloud deployment:
+
+- **Render (Free Web Service)**: Native Python runtime using the bundled `render.yaml` or `Procfile`.
+- **Railway**: Automatic containerization with the production `Dockerfile`.
+- **Google Cloud Run**: Serverless container deployment with native low-latency Gemini connectivity.
+- **Docker**: Portable image buildable on any server or VPS (`docker build -t ai-home-renovation .`).
+
+For detailed step-by-step instructions on deploying to Render, Railway, Google Cloud Run, Hugging Face, or Docker, see **[DEPLOYMENT.md](DEPLOYMENT.md)**.
 
 ---
 
